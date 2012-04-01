@@ -1,0 +1,19 @@
+package dfproto;
+
+option optimize_for = LITE_RUNTIME;
+
+// RPC RenameSquad : RenameSquadIn -> EmptyMessage
+message RenameSquadIn {
+    required int32 squad_id = 1;
+
+    optional string nickname = 2;
+    optional string alias = 3;
+}
+
+// RPC RenameUnit : RenameUnitIn -> EmptyMessage
+message RenameUnitIn {
+    required int32 unit_id = 1;
+
+    optional string nickname = 2;
+    optional string profession = 3;
+}
