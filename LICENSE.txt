@@ -40,3 +40,15 @@ protobuf                    build/dep/protoc-license.txt
 protobuf-csharp-port        build/dep/protobuf-csharp-port-license.txt
 log4net                     build/dep/log4net-LICENSE.txt
 
+-------------------------------------------------------------------------------
+
+This software uses icons from the Fugue set by Yusuke Kamiyamane.
+
+Fugue Icons
+<http://p.yusukekamiyamane.com/>
+
+(C) 2012 Yusuke Kamiyamane. All rights reserved.
+These icons are licensed under a Creative Commons
+Attribution 3.0 License.
+<http://creativecommons.org/licenses/by/3.0/>
+
