@@ -18,6 +18,12 @@ namespace HeavyDuck.DF.DwarfDuck
     {
         private const string TOOL_MAIN_REFRESH = "MAIN_REFRESH";
 
+        private const string COLUMN_DWARF_GENDER_IMAGE = "dwarf_gender_image";
+        private const string COLUMN_DWARF_NAME = "dwarf_name";
+        private const string COLUMN_DWARF_PROFESSION = "dwarf_profession";
+        private const string COLUMN_DWARF_PROFESSION_IMAGE = "dwarf_profession_image";
+        private const string COLUMN_DWARF_SKILLS = "dwarf_skills";
+
         private DFHackReply<GetWorldInfoOut> m_world;
         private DFHackReply<ListEnumsOut> m_enums;
 
@@ -52,13 +58,21 @@ namespace HeavyDuck.DF.DwarfDuck
             grid_dwarves.Columns.Add(new DataGridViewImageColumn()
             {
                 AutoSizeMode = DataGridViewAutoSizeColumnMode.None,
+                DataPropertyName = "Profession",
+                HeaderText = "",
+                Name = COLUMN_DWARF_PROFESSION_IMAGE,
+                Width = DwarfGraphics.GetDefaultImage().Width + 2,
+            });
+            grid_dwarves.Columns.Add(new DataGridViewImageColumn()
+            {
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.None,
                 DataPropertyName = "Gender",
                 DefaultCellStyle =
                 {
                     Alignment = DataGridViewContentAlignment.MiddleCenter,
                 },
                 HeaderText = "",
-                Name = "Gender",
+                Name = COLUMN_DWARF_GENDER_IMAGE,
                 Width = 20,
             });
             grid_dwarves.Columns.Add(new DataGridViewTextBoxColumn()
@@ -66,35 +80,21 @@ namespace HeavyDuck.DF.DwarfDuck
                 AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
                 DataPropertyName = "Name",
                 HeaderText = "Name",
-                Name = "Name",
-            });
-            grid_dwarves.Columns.Add(new DataGridViewTextBoxColumn()
-            {
-                AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells,
-                DataPropertyName = "Race",
-                HeaderText = "Race",
-                Name = "Race",
+                Name = COLUMN_DWARF_NAME,
             });
             grid_dwarves.Columns.Add(new DataGridViewTextBoxColumn()
             {
                 AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells,
                 DataPropertyName = "Profession",
                 HeaderText = "Profession",
-                Name = "Profession",
+                Name = COLUMN_DWARF_PROFESSION,
             });
             grid_dwarves.Columns.Add(new DataGridViewTextBoxColumn()
             {
                 AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
                 DataPropertyName = "SkillsList",
                 HeaderText = "Skills",
-                Name = "SkillsList",
-            });
-            grid_dwarves.Columns.Add(new DataGridViewImageColumn()
-            {
-                AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells,
-                DataPropertyName = "Profession",
-                HeaderText = "Profession",
-                Name = "Profession",
+                Name = COLUMN_DWARF_SKILLS,
             });
             grid_dwarves.CellFormatting += new DataGridViewCellFormattingEventHandler(grid_dwarves_CellFormatting);
         }
@@ -116,83 +116,69 @@ namespace HeavyDuck.DF.DwarfDuck
 
         private void grid_dwarves_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
         {
-            if (e.ColumnIndex == 0)
-            {
-                var gender = e.Value as int?;
-                if (gender == null) return;
+            string name;
+            int? id;
 
-                switch (gender.Value)
-                {
-                    case 0:
-                        e.Value = Properties.Resources.gender_female;
-                        break;
-                    case 1:
-                        e.Value = Properties.Resources.gender;
-                        break;
-                    default:
+            switch (grid_dwarves.Columns[e.ColumnIndex].Name)
+            {
+                case COLUMN_DWARF_GENDER_IMAGE:
+                    var gender = e.Value as int?;
+                    if (gender == null) return;
+
+                    switch (gender.Value)
+                    {
+                        case 0:
+                            e.Value = Properties.Resources.gender_female;
+                            break;
+                        case 1:
+                            e.Value = Properties.Resources.gender;
+                            break;
+                        default:
+                            e.Value = null;
+                            break;
+                    }
+
+                    break;
+                case COLUMN_DWARF_NAME:
+                    var name_info = e.Value as NameInfo;
+                    if (name_info == null) return;
+
+                    e.Value = FormatDwarfName(name_info);
+
+                    break;
+                case COLUMN_DWARF_PROFESSION:
+                    id = e.Value as int?;
+                    if (id == null) return;
+
+                    e.Value = FormatDwarfProfession(id.Value);
+
+                    if ("Unknown".Equals(e.Value))
+                        e.CellStyle.ForeColor = Color.LightGray;
+
+                    break;
+                case COLUMN_DWARF_PROFESSION_IMAGE:
+                    id = e.Value as int?;
+                    if (id == null) return;
+
+                    if (m_names_profession.TryGetValue(id.Value, out name))
+                        e.Value = DwarfGraphics.GetImage(name) ?? DwarfGraphics.GetDefaultImage();
+                    else
                         e.Value = null;
-                        break;
-                }
-            }
-            else if (e.ColumnIndex == 1)
-            {
-                var name = e.Value as NameInfo;
-                if (name == null) return;
 
-                e.Value = string.Format("{0} {1}",
-                    CultureInfo.InvariantCulture.TextInfo.ToTitleCase(name.FirstName),
-                    CultureInfo.InvariantCulture.TextInfo.ToTitleCase(name.LastName));
-            }
-            else if (e.ColumnIndex == 2)
-            {
-                var id = e.Value as int?;
-                if (id == null) return;
+                    break;
+                case COLUMN_DWARF_SKILLS:
+                    var skills = e.Value as IList<SkillInfo>;
+                    if (skills == null || skills.Count < 1) return;
 
-                if (id.Value == m_world.Data.RaceId)
-                    e.Value = "Dwarf";
-                else
-                    e.Value = "?";
-            }
-            else if (e.ColumnIndex == 3)
-            {
-                string name;
-                var id = e.Value as int?;
-                if (id == null) return;
+                    var value = new StringBuilder();
+                    foreach (var skill in skills)
+                        value.AppendFormat("{0} {1}, ", FormatDwarfSkill(skill.Id), skill.Level);
+                    if (value.Length > 2)
+                        value.Remove(value.Length - 2, 2);
 
-                if (m_names_profession.TryGetValue(id.Value, out name))
-                {
-                    e.Value = name;
-                }
-                else
-                {
-                    e.Value = "Unknown";
-                    e.CellStyle.ForeColor = Color.LightGray;
-                }
-            }
-            else if (e.ColumnIndex == 4)
-            {
-                string name;
-                var skills = e.Value as IList<SkillInfo>;
-                if (skills == null || skills.Count < 1) return;
+                    e.Value = value.ToString();
 
-                var value = new StringBuilder();
-                foreach (var skill in skills)
-                    value.AppendFormat("{0} {1}, ", m_names_skill.TryGetValue(skill.Id, out name) ? name : "Unknown", skill.Level);
-                if (value.Length > 2)
-                    value.Remove(value.Length - 2, 2);
-
-                e.Value = value.ToString();
-            }
-            else if (e.ColumnIndex == 5)
-            {
-                string name;
-                var id = e.Value as int?;
-                if (id == null) return;
-
-                if (m_names_profession.TryGetValue(id.Value, out name))
-                    e.Value = DwarfGraphics.GetImage(name) ?? DwarfGraphics.GetDefaultImage();
-                else
-                    e.Value = null;
+                    break;
             }
         }
 
@@ -206,7 +192,43 @@ namespace HeavyDuck.DF.DwarfDuck
                 reply = client.ListUnits();
             }
 
-            grid_dwarves.DataSource = new ObjectBindingList<BasicUnitInfo>(reply.Data.ValueList);
+            grid_dwarves.DataSource = new ObjectBindingList<BasicUnitInfo>(reply.Data.ValueList.Where(u => u.Race == m_world.Data.RaceId));
+        }
+
+        private string FormatDwarfName(NameInfo name)
+        {
+            return string.Format("{0} {1}",
+                FormatName(name.FirstName),
+                FormatName(name.LastName));
+        }
+
+        private string FormatDwarfProfession(int id)
+        {
+            string name;
+
+            if (m_names_profession.TryGetValue(id, out name))
+                return FormatName(name);
+            else
+                return "Unknown";
+        }
+
+        private string FormatDwarfSkill(int id)
+        {
+            string name;
+
+            if (m_names_skill.TryGetValue(id, out name))
+                return name;
+            else
+                return "UNKNOWN";
+        }
+
+        private string FormatName(string name)
+        {
+            name = name.Replace('_', ' ');
+            name = name.ToLowerInvariant();
+            name = CultureInfo.InvariantCulture.TextInfo.ToTitleCase(name);
+
+            return name;
         }
     }
 }

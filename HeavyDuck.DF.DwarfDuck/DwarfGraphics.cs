@@ -28,6 +28,7 @@ namespace HeavyDuck.DF.DwarfDuck
             Size dim_page = Size.Empty;
             Rectangle dest = Rectangle.Empty;
             Rectangle src;
+            var dwarves = Properties.Resources.dwarves;
 
             try
             {
@@ -72,7 +73,7 @@ namespace HeavyDuck.DF.DwarfDuck
 
                                 // draw the tile from the page into the images
                                 using (var g = Graphics.FromImage(image))
-                                    g.DrawImage(Properties.Resources.dwarves, dest, src, GraphicsUnit.Pixel);
+                                    g.DrawImage(dwarves, dest, src, GraphicsUnit.Pixel);
                                 using (var g = Graphics.FromImage(image_disabled))
                                     ControlPaint.DrawImageDisabled(g, image, 0, 0, Color.Transparent);
 
