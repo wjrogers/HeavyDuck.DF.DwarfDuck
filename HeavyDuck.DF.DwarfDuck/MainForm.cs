@@ -89,6 +89,13 @@ namespace HeavyDuck.DF.DwarfDuck
                 HeaderText = "Skills",
                 Name = "SkillsList",
             });
+            grid_dwarves.Columns.Add(new DataGridViewImageColumn()
+            {
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells,
+                DataPropertyName = "Profession",
+                HeaderText = "Profession",
+                Name = "Profession",
+            });
             grid_dwarves.CellFormatting += new DataGridViewCellFormattingEventHandler(grid_dwarves_CellFormatting);
         }
 
@@ -175,6 +182,17 @@ namespace HeavyDuck.DF.DwarfDuck
                     value.Remove(value.Length - 2, 2);
 
                 e.Value = value.ToString();
+            }
+            else if (e.ColumnIndex == 5)
+            {
+                string name;
+                var id = e.Value as int?;
+                if (id == null) return;
+
+                if (m_names_profession.TryGetValue(id.Value, out name))
+                    e.Value = DwarfGraphics.GetImage(name) ?? DwarfGraphics.GetDefaultImage();
+                else
+                    e.Value = null;
             }
         }
 

@@ -67,6 +67,13 @@ namespace HeavyDuck.DF.DwarfDuck.Properties {
             }
         }
         
+        internal static System.Drawing.Bitmap dwarves {
+            get {
+                object obj = ResourceManager.GetObject("dwarves", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
         internal static System.Drawing.Bitmap gender {
             get {
                 object obj = ResourceManager.GetObject("gender", resourceCulture);
@@ -78,6 +85,36 @@ namespace HeavyDuck.DF.DwarfDuck.Properties {
             get {
                 object obj = ResourceManager.GetObject("gender_female", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to graphics_dwarves
+        ///
+        ///[OBJECT:GRAPHICS]
+        ///
+        ///[TILE_PAGE:DWARVES]
+        ///  [FILE:dwarves.png]
+        ///  [TILE_DIM:18:18]
+        ///  [PAGE_DIM:16:9]
+        ///
+        ///[CREATURE_GRAPHICS:DWARF]
+        ///  [STANDARD:DWARVES:0:0:AS_IS:DEFAULT]
+        ///  [DEFAULT:DWARVES:0:0:ADD_COLOR:DEFAULT]
+        ///  [CHILD:DWARVES:1:0:AS_IS:DEFAULT]
+        ///  [BABY:DWARVES:2:0:AS_IS:DEFAULT]
+        ///
+        ///  [SLAVE:DWARVES:3:0:AS_IS:DEFAULT]
+        ///  [PRISONER:DWARVES:4:0:AS_IS:DEFAULT]
+        ///
+        ///  [MINER:DWARVES:5:0:AS_IS:DEFAULT]
+        ///  [STONEWORKER:DWARVES:6:0:AS_IS:DEFAULT]
+        ///  [ENGRAVER:DWARVES:7:0:AS_IS:DEFAULT]
+        ///  [ [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string graphics_dwarves {
+            get {
+                return ResourceManager.GetString("graphics_dwarves", resourceCulture);
             }
         }
     }
