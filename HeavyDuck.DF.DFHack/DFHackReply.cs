@@ -18,5 +18,8 @@ namespace HeavyDuck.DF.DFHack
         public T Data { get; private set; }
         public DFHackCommandResult ResultCode { get; private set; }
         public List<CoreTextNotification> Notifications { get; private set; }
+
+        public bool IsSuccess { get { return ResultCode == DFHackCommandResult.CR_OK; } }
+        public bool IsFailure { get { return !IsSuccess; } }
     }
 }

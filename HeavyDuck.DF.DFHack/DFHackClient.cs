@@ -11,6 +11,9 @@ using log4net;
 
 namespace HeavyDuck.DF.DFHack
 {
+    /// <summary>
+    /// Provides an friendly interface to the DFHack protobuf API.
+    /// </summary>
     public class DFHackClient : IDisposable
     {
         private const int DEFAULT_TIMEOUT = 2000;
@@ -20,6 +23,8 @@ namespace HeavyDuck.DF.DFHack
 
         private readonly Dictionary<Tuple<string, string, string, string>, short> m_bindings
             = new Dictionary<Tuple<string, string, string, string>, short>();
+        private readonly byte[] m_buffer_proto = new byte[RPCMessageHeader.MAX_MESSAGE_SIZE];
+        private readonly byte[] m_buffer_header = new byte[Marshal.SizeOf(typeof(RPCMessageHeader))];
         private TcpClient m_client;
 
         /// <summary>
@@ -52,7 +57,7 @@ namespace HeavyDuck.DF.DFHack
 
                 // read the response
                 stream.ReadTimeout = DEFAULT_TIMEOUT;
-                stream.Read(buffer, 0, buffer.Length);
+                ReadBytes(stream, buffer, buffer.Length);
 
                 // check response magic
                 var response = ConvertBytesToStruct<RPCHandshakeHeader>(buffer);
@@ -118,12 +123,11 @@ namespace HeavyDuck.DF.DFHack
                 data.WriteTo(stream);
         }
 
-        public DFHackReply<T> Receive<T>(Func<ByteString, T> parser)
+        public DFHackReply<T> Receive<T>(Func<ByteString, T> parser) where T : class, IMessageLite
         {
+            T data;
             ByteString chunk;
             CoreTextNotification notification;
-            var buffer_proto = new byte[RPCMessageHeader.MAX_MESSAGE_SIZE];
-            var buffer = new byte[Marshal.SizeOf(typeof(RPCMessageHeader))];
             var stream = m_client.GetStream();
             var text = new List<CoreTextNotification>();
             RPCMessageHeader header;
@@ -131,33 +135,31 @@ namespace HeavyDuck.DF.DFHack
             while (true)
             {
                 // read a message header from the stream
-                if (buffer.Length != stream.Read(buffer, 0, buffer.Length))
-                    throw new DFProtocolException("Could not read header, not enough data in the stream");
-                header = ConvertBytesToStruct<RPCMessageHeader>(buffer);
+                ReadBytes(stream, m_buffer_header, m_buffer_header.Length);
+                header = ConvertBytesToStruct<RPCMessageHeader>(m_buffer_header);
 
                 // interpret the header
                 switch (header.id)
                 {
                     case (short)DFHackReplyCode.RPC_REPLY_TEXT:
-                        if (header.size != stream.Read(buffer_proto, 0, header.size))
-                            throw new DFProtocolException("Could not read enough bytes");
+                        ReadBytes(stream, m_buffer_proto, header.size);
 
                         // parse a text notification  message from the stream
-                        chunk = ByteString.CopyFrom(buffer_proto, 0, header.size);
+                        chunk = ByteString.CopyFrom(m_buffer_proto, 0, header.size);
                         notification = CoreTextNotification.ParseFrom(chunk);
                         text.Add(notification);
 
                         break;
                     case (short)DFHackReplyCode.RPC_REPLY_RESULT:
-                        if (header.size != stream.Read(buffer_proto, 0, header.size))
-                            throw new DFProtocolException("Could not read enough bytes");
+                        ReadBytes(stream, m_buffer_proto, header.size);
 
                         // parse a text notification  message from the stream
-                        chunk = ByteString.CopyFrom(buffer_proto, 0, header.size);
-                        return new DFHackReply<T>(parser(chunk), DFHackCommandResult.CR_OK, text);
+                        chunk = ByteString.CopyFrom(m_buffer_proto, 0, header.size);
+                        data = parser(chunk);
+                        return new DFHackReply<T>(data, DFHackCommandResult.CR_OK, text);
 
                     case (short)DFHackReplyCode.RPC_REPLY_FAIL:
-                        throw new DFProtocolException("RPC failed", (DFHackCommandResult)header.size);
+                        return new DFHackReply<T>(null, (DFHackCommandResult)header.size, text);
                 }
             }
         }
@@ -226,9 +228,21 @@ namespace HeavyDuck.DF.DFHack
         # region Private Helper Methods
 
         /// <summary>
+        /// Reads a specific number of bytes from a stream.
+        /// </summary>
+        /// <param name="input">The input stream.</param>
+        /// <param name="buffer">The buffer to read into.</param>
+        /// <param name="count">The number of bytes to read.</param>
+        private static void ReadBytes(Stream input, byte[] buffer, int count)
+        {
+            for (int read = 0; read < count; )
+                read += input.Read(buffer, read, count - read);
+        }
+
+        /// <summary>
         /// Marshals a structure into an unmanaged byte array.
         /// </summary>
-        private byte[] ConvertStructToBytes<T>(T value) where T : struct
+        private static byte[] ConvertStructToBytes<T>(T value) where T : struct
         {
             var buffer = new byte[Marshal.SizeOf(typeof(T))];
             var handle = GCHandle.Alloc(buffer, GCHandleType.Pinned);
@@ -248,7 +262,7 @@ namespace HeavyDuck.DF.DFHack
         /// <summary>
         /// Marshals an unmanaged byte array into a struct.
         /// </summary>
-        private T ConvertBytesToStruct<T>(byte[] buffer) where T : struct
+        private static T ConvertBytesToStruct<T>(byte[] buffer) where T : struct
         {
             var handle = GCHandle.Alloc(buffer, GCHandleType.Pinned);
 
