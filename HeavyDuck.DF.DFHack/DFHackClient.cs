@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Sockets;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using dfproto;
@@ -208,13 +209,52 @@ namespace HeavyDuck.DF.DFHack
             return Receive(CoreBindReply.ParseFrom);
         }
 
+        public DFHackReply<GetWorldInfoOut> GetWorldInfo()
+        {
+            var id = GetBinding(
+                MethodInfo.GetCurrentMethod().Name,
+                typeof(EmptyMessage).FullName,
+                typeof(GetWorldInfoOut).FullName);
+            var data_request = new EmptyMessage.Builder();
+
+            // send the message
+            Send(id, data_request.Build());
+            
+            // get the reply
+            return Receive(GetWorldInfoOut.ParseFrom);
+        }
+
+        public DFHackReply<ListEnumsOut> ListEnums()
+        {
+            var id = GetBinding(
+                MethodInfo.GetCurrentMethod().Name,
+                typeof(EmptyMessage).FullName,
+                typeof(ListEnumsOut).FullName);
+            var data_request = new EmptyMessage.Builder();
+
+            // send the message
+            Send(id, data_request.Build());
+            
+            // get the reply
+            return Receive(ListEnumsOut.ParseFrom);
+        }
+
         public DFHackReply<ListUnitsOut> ListUnits()
         {
             var id = GetBinding(
-                "ListUnits",
+                MethodInfo.GetCurrentMethod().Name,
                 typeof(ListUnitsIn).FullName,
                 typeof(ListUnitsOut).FullName);
-            var data_request = new ListUnitsIn.Builder() { ScanAll = true };
+            var data_request = new ListUnitsIn.Builder()
+            {
+                ScanAll = true,
+                Mask = new BasicUnitInfoMask.Builder()
+                {
+                    Labors = true,
+                    Profession = true,
+                    Skills = true,
+                }.Build(),
+            };
 
             // send the message
             Send(id, data_request.Build());
