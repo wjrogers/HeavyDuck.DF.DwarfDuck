@@ -50,23 +50,29 @@
     <Compile Include="DFHackClient.cs" />
     <Compile Include="DFHackReply.cs" />
     <Compile Include="DFProtocolException.cs" />
-    <Compile Include="dfproto\Basic.cs" />
-    <Compile Include="dfproto\BasicApi.cs" />
-    <Compile Include="dfproto\Block.cs" />
-    <Compile Include="dfproto\CoreProtocol.cs" />
-    <Compile Include="dfproto\Map.cs" />
-    <Compile Include="dfproto\Material.cs" />
-    <Compile Include="dfproto\Plant.cs" />
-    <Compile Include="dfproto\Rename.cs" />
-    <Compile Include="dfproto\Tile.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Protocol.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
+  -->
+  <PropertyGroup>
+      <ProtoGen>..\build\dep\ProtoGen.exe</ProtoGen>
+      <ProtocolPath>dfproto\</ProtocolPath>
+      <ProtocolOutput>dfproto\generated\</ProtocolOutput>
+  </PropertyGroup>
+  <ItemGroup>
+      <Protocol Include="$(ProtocolPath)*.proto" />
+  </ItemGroup>
+  <ItemGroup>
+      <Compile Include="@(Protocol -> '$(ProtocolOutput)%(Filename).cs')" />
+  </ItemGroup>
+  <Target Name="ProtoGen">
+      <Exec Command="$(ProtoGen) -cls_compliance=false -output_directory=$(ProtocolOutput) --error_format=msvs --proto_path=$(ProtocolPath) @(Protocol, ' ')" />
   </Target>
+  <Target Name="BeforeBuild" DependsOnTargets="ProtoGen" />
+  <!--
   <Target Name="AfterBuild">
   </Target>
   -->
