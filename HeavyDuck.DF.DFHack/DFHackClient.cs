@@ -239,6 +239,21 @@ namespace HeavyDuck.DF.DFHack
             return Receive(ListEnumsOut.ParseFrom);
         }
 
+        public DFHackReply<ListJobSkillsOut> ListJobSkills()
+        {
+            var id = GetBinding(
+                MethodInfo.GetCurrentMethod().Name,
+                typeof(EmptyMessage).FullName,
+                typeof(ListJobSkillsOut).FullName);
+            var data_request = new EmptyMessage.Builder();
+
+            // send the message
+            Send(id, data_request.Build());
+            
+            // get the reply
+            return Receive(ListJobSkillsOut.ParseFrom);
+        }
+
         public DFHackReply<ListUnitsOut> ListUnits()
         {
             var id = GetBinding(
