@@ -55,6 +55,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DwarfGraphics.cs" />
+    <Compile Include="DwarfListColumn.cs" />
+    <Compile Include="DwarfRecord.cs" />
+    <Compile Include="GameData.cs" />
+    <Compile Include="LaborRecord.cs" />
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -106,10 +110,10 @@
     <None Include="Resources\gender-female.png" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Resources\dwarves.png" />
+    <None Include="Resources\graphics_dwarves.txt" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Resources\graphics_dwarves.txt" />
+    <None Include="Resources\dwarves.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

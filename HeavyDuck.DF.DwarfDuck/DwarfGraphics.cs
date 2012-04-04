@@ -7,15 +7,16 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
 using log4net;
+using dfproto;
 
 namespace HeavyDuck.DF.DwarfDuck
 {
     internal static class DwarfGraphics
     {
+        private const string KEY_PROFESSION_DEFAULT = "DEFAULT";
+
         private static readonly ILog m_logger = LogManager.GetLogger(typeof(DwarfGraphics));
         private static readonly Dictionary<string, Image> m_images
-            = new Dictionary<string, Image>();
-        private static readonly Dictionary<string, Image> m_images_disabled
             = new Dictionary<string, Image>();
 
         private static readonly Regex m_regex_dim_tile = new Regex(@"\[TILE_DIM:(\d+):(\d+)\]", RegexOptions.IgnoreCase);
@@ -55,7 +56,6 @@ namespace HeavyDuck.DF.DwarfDuck
                             if ((match = m_regex_entry.Match(line)).Success)
                             {
                                 Image image;
-                                Image image_disabled;
                                 var profession = match.Groups[1].Value;
                                 var col = Convert.ToInt32(match.Groups[2].Value);
                                 var row = Convert.ToInt32(match.Groups[3].Value);
@@ -69,17 +69,13 @@ namespace HeavyDuck.DF.DwarfDuck
                                 // create the images
                                 src = new Rectangle(col * dim_tile.Width, row * dim_tile.Height, dim_tile.Width, dim_tile.Height);
                                 image = new Bitmap(dim_tile.Width, dim_tile.Height);
-                                image_disabled = new Bitmap(dim_tile.Width, dim_tile.Height);
 
                                 // draw the tile from the page into the images
                                 using (var g = Graphics.FromImage(image))
                                     g.DrawImage(dwarves, dest, src, GraphicsUnit.Pixel);
-                                using (var g = Graphics.FromImage(image_disabled))
-                                    ControlPaint.DrawImageDisabled(g, image, 0, 0, Color.Transparent);
 
                                 // store them for later lookup
                                 m_images[profession] = image;
-                                m_images_disabled[profession] = image_disabled;
                             }
                         }
                     }
@@ -96,15 +92,15 @@ namespace HeavyDuck.DF.DwarfDuck
         /// </summary>
         public static Image GetDefaultImage()
         {
-            return GetImage("STANDARD");
+            return GetImage(KEY_PROFESSION_DEFAULT);
         }
 
         /// <summary>
-        /// Get the default disabled dwarf image.
+        /// Get the dwarf image for the specified profession.
         /// </summary>
-        public static Image GetDefaultImageDisabled()
+        public static Image GetImage(ProfessionAttr profession)
         {
-            return GetImageDisabled("STANDARD");
+            return GetImage(profession.Key);
         }
 
         /// <summary>
@@ -114,23 +110,22 @@ namespace HeavyDuck.DF.DwarfDuck
         {
             Image image;
 
-            if (m_images.TryGetValue(profession, out image))
+            if (profession != null && m_images.TryGetValue(profession, out image))
                 return image;
             else
-                return null;
+                return GetDefaultImage();
         }
 
         /// <summary>
-        /// Get the disabled dwarf image for the specified profession.
+        /// Get the dwarf image for the specified profession.
         /// </summary>
-        public static Image GetImageDisabled(string profession)
+        public static Image GetImage(int id)
         {
-            Image image;
-
-            if (m_images_disabled.TryGetValue(profession, out image))
-                return image;
+            var profession = GameData.GetProfession(id);
+            if (profession != null)
+                return GetImage(profession.Key);
             else
-                return null;
+                return GetDefaultImage();
         }
     }
 }
