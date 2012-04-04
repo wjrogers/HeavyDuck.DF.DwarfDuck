@@ -55,10 +55,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DwarfGraphics.cs" />
+    <Compile Include="DwarfLabor.cs" />
     <Compile Include="DwarfListColumn.cs" />
-    <Compile Include="DwarfRecord.cs" />
+    <Compile Include="DwarfProfession.cs" />
+    <Compile Include="Dwarf.cs" />
+    <Compile Include="DwarfSkill.cs" />
     <Compile Include="GameData.cs" />
-    <Compile Include="LaborRecord.cs" />
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>
     </Compile>

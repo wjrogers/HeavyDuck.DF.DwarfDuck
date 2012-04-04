@@ -20,13 +20,14 @@ namespace HeavyDuck.DF.DwarfDuck
 
         private const string COLUMN_LABORS_NAME = "labors_name";
         private const string COLUMN_LABORS_ASSIGNED = "labors_assigned";
-        private const string COLUMN_LABORS_SKILLED = "labors_skilled";
+        private const string COLUMN_LABORS_POTENTIAL = "labors_skilled";
 
         private const string COLUMN_DWARF_GENDER_IMAGE = "dwarf_gender_image";
         private const string COLUMN_DWARF_LABORS = "dwarf_labors";
+        private const string COLUMN_DWARF_MENIAL_COUNT = "dwarf_menial_count";
         private const string COLUMN_DWARF_NAME = "dwarf_name";
         private const string COLUMN_DWARF_PROFESSION = "dwarf_profession";
-        private const string COLUMN_DWARF_PROFESSION_IMAGE = "dwarf_profession_image";
+        private const string COLUMN_DWARF_IMAGE = "dwarf_image";
         private const string COLUMN_DWARF_SKILLS = "dwarf_skills";
 
         public MainForm()
@@ -57,14 +58,14 @@ namespace HeavyDuck.DF.DwarfDuck
             grid_labors.Columns.Add(new DataGridViewTextBoxColumn()
             {
                 AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells,
-                DataPropertyName = "Name",
+                DataPropertyName = "Caption",
                 HeaderText = "Name",
                 Name = COLUMN_LABORS_NAME,
             });
             grid_labors.Columns.Add(new DwarfListColumn()
             {
                 AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
-                DataPropertyName = "AssignedUnits",
+                DataPropertyName = "UnitsAssigned",
                 HeaderText = "Assigned",
                 Name = COLUMN_LABORS_ASSIGNED,
                 Width = 100,
@@ -72,9 +73,9 @@ namespace HeavyDuck.DF.DwarfDuck
             grid_labors.Columns.Add(new DwarfListColumn()
             {
                 AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
-                DataPropertyName = "SkilledUnits",
+                DataPropertyName = "UnitsPotential",
                 HeaderText = "Others Skilled",
-                Name = COLUMN_LABORS_SKILLED,
+                Name = COLUMN_LABORS_POTENTIAL,
                 Width = 100,
             });
             grid_labors.CellFormatting += new DataGridViewCellFormattingEventHandler(grid_labors_CellFormatting);
@@ -87,15 +88,7 @@ namespace HeavyDuck.DF.DwarfDuck
             grid_dwarves.Columns.Add(new DataGridViewImageColumn()
             {
                 AutoSizeMode = DataGridViewAutoSizeColumnMode.None,
-                DataPropertyName = "Profession",
-                HeaderText = "",
-                Name = COLUMN_DWARF_PROFESSION_IMAGE,
-                Width = DwarfGraphics.GetDefaultImage().Width + 2,
-            });
-            grid_dwarves.Columns.Add(new DataGridViewImageColumn()
-            {
-                AutoSizeMode = DataGridViewAutoSizeColumnMode.None,
-                DataPropertyName = "GenderID",
+                DataPropertyName = "Gender",
                 DefaultCellStyle =
                 {
                     Alignment = DataGridViewContentAlignment.MiddleCenter,
@@ -103,6 +96,14 @@ namespace HeavyDuck.DF.DwarfDuck
                 HeaderText = "",
                 Name = COLUMN_DWARF_GENDER_IMAGE,
                 Width = 20,
+            });
+            grid_dwarves.Columns.Add(new DataGridViewImageColumn()
+            {
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.None,
+                DataPropertyName = "Image",
+                HeaderText = "",
+                Name = COLUMN_DWARF_IMAGE,
+                Width = DwarfGraphics.GetDefaultImage().Width + 2,
             });
             grid_dwarves.Columns.Add(new DataGridViewTextBoxColumn()
             {
@@ -121,7 +122,7 @@ namespace HeavyDuck.DF.DwarfDuck
             grid_dwarves.Columns.Add(new DwarfListColumn()
             {
                 AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
-                DataPropertyName = "AssignedLabors",
+                DataPropertyName = "LaborsView",
                 HeaderText = "Labors",
                 Name = COLUMN_DWARF_LABORS,
                 Width = 100,
@@ -129,10 +130,21 @@ namespace HeavyDuck.DF.DwarfDuck
             grid_dwarves.Columns.Add(new DwarfListColumn()
             {
                 AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
-                DataPropertyName = "OtherSkills",
+                DataPropertyName = "LaborsPotentialView",
                 HeaderText = "Other Skills",
                 Name = COLUMN_DWARF_SKILLS,
                 Width = 100,
+            });
+            grid_dwarves.Columns.Add(new DataGridViewTextBoxColumn()
+            {
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells,
+                DataPropertyName = "MenialLaborCount",
+                DefaultCellStyle =
+                {
+                    Alignment = DataGridViewContentAlignment.MiddleRight,
+                },
+                HeaderText = "Menials",
+                Name = COLUMN_DWARF_MENIAL_COUNT,
             });
             grid_dwarves.CellFormatting += new DataGridViewCellFormattingEventHandler(grid_dwarves_CellFormatting);
         }
@@ -144,20 +156,10 @@ namespace HeavyDuck.DF.DwarfDuck
 
         private void grid_labors_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
         {
-            switch (grid_labors.Columns[e.ColumnIndex].Name)
-            {
-                case COLUMN_LABORS_NAME:
-                    var name = e.Value as string;
-                    if (name != null)
-                        e.Value = FormatName(name);
-                    break;
-            }
         }
 
         private void grid_dwarves_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
         {
-            ProfessionAttr profession;
-
             switch (grid_dwarves.Columns[e.ColumnIndex].Name)
             {
                 case COLUMN_DWARF_GENDER_IMAGE:
@@ -178,22 +180,9 @@ namespace HeavyDuck.DF.DwarfDuck
                     }
 
                     break;
-                case COLUMN_DWARF_NAME:
-                    var name_info = e.Value as NameInfo;
-                    if (name_info == null) return;
-
-                    e.Value = FormatDwarfName(name_info);
-
-                    break;
-                case COLUMN_DWARF_PROFESSION:
-                    profession = (e.Value as ProfessionAttr) ?? GameData.GetProfession(GameData.NONE);
-                    e.Value = profession.Caption;
-
-                    break;
-                case COLUMN_DWARF_PROFESSION_IMAGE:
-                    profession = (e.Value as ProfessionAttr) ?? GameData.GetProfession(GameData.NONE);
-                    e.Value = DwarfGraphics.GetImage(profession.Key) ?? DwarfGraphics.GetDefaultImage();
-
+                case COLUMN_DWARF_MENIAL_COUNT:
+                    if ((int)e.Value < 1)
+                        e.CellStyle.ForeColor = Color.Gray;
                     break;
             }
         }
@@ -208,29 +197,13 @@ namespace HeavyDuck.DF.DwarfDuck
                 reply = client.ListUnits();
             }
 
-            var dwarves = new ObjectBindingList<DwarfRecord>(reply.Data.ValueList
+            var dwarves = new ObjectBindingList<Dwarf>(reply.Data.ValueList
                 .Where(u => u.Race == GameData.World.RaceId)
-                .Select(u => new DwarfRecord(u)));
-            var labors = new ObjectBindingList<LaborRecord>(GameData.GetLabors(dwarves));
+                .Select(u => new Dwarf(u)));
 
+            GameData.UpdateLabors(dwarves);
             grid_dwarves.DataSource = dwarves;
-            grid_labors.DataSource = labors;
-        }
-
-        private string FormatDwarfName(NameInfo name)
-        {
-            return string.Format("{0} {1}",
-                FormatName(name.FirstName),
-                FormatName(name.LastName));
-        }
-
-        private string FormatName(string name)
-        {
-            name = name.Replace('_', ' ');
-            name = name.ToLowerInvariant();
-            name = CultureInfo.InvariantCulture.TextInfo.ToTitleCase(name);
-
-            return name;
+            grid_labors.DataSource = new ObjectBindingList<DwarfLabor>(GameData.GetLabors());
         }
     }
 }

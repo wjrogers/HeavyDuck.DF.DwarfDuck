@@ -7,7 +7,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
 using log4net;
-using dfproto;
 
 namespace HeavyDuck.DF.DwarfDuck
 {
@@ -98,32 +97,12 @@ namespace HeavyDuck.DF.DwarfDuck
         /// <summary>
         /// Get the dwarf image for the specified profession.
         /// </summary>
-        public static Image GetImage(ProfessionAttr profession)
-        {
-            return GetImage(profession.Key);
-        }
-
-        /// <summary>
-        /// Get the dwarf image for the specified profession.
-        /// </summary>
         public static Image GetImage(string profession)
         {
             Image image;
 
             if (profession != null && m_images.TryGetValue(profession, out image))
                 return image;
-            else
-                return GetDefaultImage();
-        }
-
-        /// <summary>
-        /// Get the dwarf image for the specified profession.
-        /// </summary>
-        public static Image GetImage(int id)
-        {
-            var profession = GameData.GetProfession(id);
-            if (profession != null)
-                return GetImage(profession.Key);
             else
                 return GetDefaultImage();
         }
