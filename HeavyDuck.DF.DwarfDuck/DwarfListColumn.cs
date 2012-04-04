@@ -1,38 +1,85 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Windows.Forms;
-using System.Drawing;
 
 namespace HeavyDuck.DF.DwarfDuck
 {
     internal class DwarfListColumn : DataGridViewColumn
     {
-        public DwarfListColumn() : base(new DwarfListCell()) { }
+        public DwarfListColumn()
+            : base(new DwarfListCell())
+        {
+            this.DefaultCellStyle.Padding = new Padding(3, 0, 3, 0);
+        }
     }
 
-    internal class DwarfListCell : DataGridViewTextBoxCell
+    internal class DwarfListCell : DataGridViewCell
     {
         private const int ITEM_WIDTH = 18;
         private const int ITEM_PADDING = 1;
 
-        public override Type FormattedValueType
+        private static readonly ThreadLocal<Dictionary<Color, Brush>> m_brush_cache
+            = new ThreadLocal<Dictionary<Color, Brush>>(() => new Dictionary<Color, Brush>());
+
+        private static Brush GetCachedBrush(Color color)
         {
-            get { return typeof(IEnumerable<DwarfListItem>); }
+            Brush brush;
+            var cache = m_brush_cache.Value;
+
+            if (!cache.TryGetValue(color, out brush))
+            {
+                brush = new SolidBrush(color);
+                cache[color] = brush;
+            }
+
+            return brush;
         }
 
-        protected override object GetFormattedValue(object value, int rowIndex, ref DataGridViewCellStyle cellStyle, System.ComponentModel.TypeConverter valueTypeConverter, System.ComponentModel.TypeConverter formattedValueTypeConverter, DataGridViewDataErrorContexts context)
+        public override Type FormattedValueType
         {
-            return value as IEnumerable<DwarfListItem>;
+            get { return typeof(IList<DwarfListItem>); }
+        }
+
+        protected override Size GetPreferredSize(Graphics graphics, DataGridViewCellStyle cellStyle, int rowIndex, Size constraintSize)
+        {
+            // don't calculate anything when we don't belong to a grid
+            if (this.DataGridView == null) return new Size(-1, -1);
+
+            // check if we have the kind of value we're expecting
+            var value = this.GetValue(rowIndex) as IList<DwarfListItem>;
+            if (value == null)
+                return new Size(-1, -1);
+
+            // measure how much space we need
+            return new Size(cellStyle.Padding.Horizontal + value.Count * (ITEM_WIDTH + ITEM_PADDING), -1);
         }
 
         protected override void Paint(Graphics graphics, Rectangle clipBounds, Rectangle cellBounds, int rowIndex, DataGridViewElementStates elementState, object value, object formattedValue, string errorText, DataGridViewCellStyle cellStyle, DataGridViewAdvancedBorderStyle advancedBorderStyle, DataGridViewPaintParts paintParts)
         {
-            int x = cellBounds.Left + ITEM_PADDING;
+            Rectangle rect_borders;
+            Rectangle rect_paint;
+            int x;
 
             // draw standard border stuffs
-            base.Paint(graphics, clipBounds, cellBounds, rowIndex, elementState, null, null, errorText, cellStyle, advancedBorderStyle, paintParts);
+            base.PaintBorder(graphics, clipBounds, cellBounds, cellStyle, advancedBorderStyle);
+
+            // measure where we will paint
+            rect_borders = BorderWidths(advancedBorderStyle);
+            rect_paint = cellBounds;
+            rect_paint.Offset(rect_borders.X, rect_borders.Y);
+            rect_paint.Width -= rect_borders.Right;
+            rect_paint.Height -= rect_borders.Bottom;
+            x = rect_paint.Left + cellStyle.Padding.Left;
+
+            // fill the background
+            if ((elementState & DataGridViewElementStates.Selected) != DataGridViewElementStates.None)
+                graphics.FillRectangle(GetCachedBrush(cellStyle.SelectionBackColor), rect_paint);
+            else
+                graphics.FillRectangle(GetCachedBrush(cellStyle.BackColor), rect_paint);
 
             // is our value a list of units?
             var list = value as IEnumerable<DwarfListItem>;
@@ -44,7 +91,7 @@ namespace HeavyDuck.DF.DwarfDuck
             {
                 if (dwarf.Image == null) continue;
 
-                int y = cellBounds.Top +  cellBounds.Height / 2 - dwarf.Image.Height / 2;
+                int y = rect_paint.Top + rect_paint.Height / 2 - dwarf.Image.Height / 2;
 
                 if (1f <= dwarf.SkillPercent)
                 {

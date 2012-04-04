@@ -64,7 +64,7 @@ namespace HeavyDuck.DF.DwarfDuck
             });
             grid_labors.Columns.Add(new DwarfListColumn()
             {
-                AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells,
                 DataPropertyName = "UnitsAssigned",
                 HeaderText = "Assigned",
                 Name = COLUMN_LABORS_ASSIGNED,
@@ -72,12 +72,13 @@ namespace HeavyDuck.DF.DwarfDuck
             });
             grid_labors.Columns.Add(new DwarfListColumn()
             {
-                AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells,
                 DataPropertyName = "UnitsPotential",
                 HeaderText = "Others Skilled",
                 Name = COLUMN_LABORS_POTENTIAL,
                 Width = 100,
             });
+            grid_labors.Columns.Add(new DataGridViewTextBoxColumn() { AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill });
             grid_labors.CellFormatting += new DataGridViewCellFormattingEventHandler(grid_labors_CellFormatting);
 
             // configure grid - dwarves
@@ -121,7 +122,7 @@ namespace HeavyDuck.DF.DwarfDuck
             });
             grid_dwarves.Columns.Add(new DwarfListColumn()
             {
-                AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells,
                 DataPropertyName = "LaborsView",
                 HeaderText = "Labors",
                 Name = COLUMN_DWARF_LABORS,
@@ -129,7 +130,7 @@ namespace HeavyDuck.DF.DwarfDuck
             });
             grid_dwarves.Columns.Add(new DwarfListColumn()
             {
-                AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells,
                 DataPropertyName = "LaborsPotentialView",
                 HeaderText = "Other Skills",
                 Name = COLUMN_DWARF_SKILLS,
@@ -146,6 +147,7 @@ namespace HeavyDuck.DF.DwarfDuck
                 HeaderText = "Menials",
                 Name = COLUMN_DWARF_MENIAL_COUNT,
             });
+            grid_dwarves.Columns.Add(new DataGridViewTextBoxColumn() { AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill });
             grid_dwarves.CellFormatting += new DataGridViewCellFormattingEventHandler(grid_dwarves_CellFormatting);
         }
 
