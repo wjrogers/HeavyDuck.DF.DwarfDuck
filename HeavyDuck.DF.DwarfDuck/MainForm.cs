@@ -33,6 +33,11 @@ namespace HeavyDuck.DF.DwarfDuck
 
         private readonly Font m_font_header;
 
+        private Func<Dwarf, bool> m_filter_dwarf;
+        private string m_filter_dwarf_caption;
+        private Func<DwarfLabor, bool> m_filter_labor;
+        private string m_filter_labor_caption;
+
         public MainForm()
         {
             InitializeComponent();
@@ -43,7 +48,11 @@ namespace HeavyDuck.DF.DwarfDuck
 
             this.Load += new EventHandler(MainForm_Load);
             this.Shown += new EventHandler(MainForm_Shown);
+            button_filter_clear_dwarf.Click += new EventHandler(button_filter_clear_dwarf_Click);
+            button_filter_clear_labor.Click += new EventHandler(button_filter_clear_labor_Click);
         }
+
+        #region Event Handlers
 
         private void MainForm_Load(object sender, EventArgs e)
         {
@@ -91,6 +100,7 @@ namespace HeavyDuck.DF.DwarfDuck
                 Width = 100,
             });
             grid_labors.Columns.Add(new DataGridViewTextBoxColumn() { AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill });
+            grid_labors.CellDoubleClick += new DataGridViewCellEventHandler(grid_labors_CellDoubleClick);
             grid_labors.CellFormatting += new DataGridViewCellFormattingEventHandler(grid_labors_CellFormatting);
             grid_labors.RowsAdded += new DataGridViewRowsAddedEventHandler(grid_labors_RowsAdded);
 
@@ -137,7 +147,7 @@ namespace HeavyDuck.DF.DwarfDuck
             {
                 AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells,
                 DataPropertyName = "LaborsView",
-                HeaderText = "Labors",
+                HeaderText = "Skilled Labors",
                 Name = COLUMN_DWARF_LABORS,
                 Width = 100,
             });
@@ -161,29 +171,50 @@ namespace HeavyDuck.DF.DwarfDuck
                 Name = COLUMN_DWARF_UNSKILLED_COUNT,
             });
             grid_dwarves.Columns.Add(new DataGridViewTextBoxColumn() { AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill });
+            grid_dwarves.CellDoubleClick += new DataGridViewCellEventHandler(grid_dwarves_CellDoubleClick);
             grid_dwarves.CellFormatting += new DataGridViewCellFormattingEventHandler(grid_dwarves_CellFormatting);
-        }
 
-        private void grid_labors_RowsAdded(object sender, DataGridViewRowsAddedEventArgs e)
-        {
-            for (int index = e.RowIndex; index - e.RowIndex < e.RowCount; index++)
-            {
-                var row = grid_labors.Rows[index];
-                var labor = row.DataBoundItem as DwarfLabor;
-                if (labor == null) return;
-
-                // don't use the dwarf list for unskilled labors that may have many workers
-                if (!labor.IsHeader && !labor.HasSkill)
-                {
-                    row.Cells[COLUMN_LABORS_ASSIGNED] = new DataGridViewTextBoxCell();
-                    row.Cells[COLUMN_LABORS_POTENTIAL] = new DataGridViewTextBoxCell();
-                }
-            }
+            // initialize filter UI state
+            ApplyFilters();
         }
 
         private void MainForm_Shown(object sender, EventArgs e)
         {
             GameData.Initialize();
+        }
+
+        private void button_filter_clear_dwarf_Click(object sender, EventArgs e)
+        {
+            ClearFilterDwarf();
+            ApplyFilters();
+        }
+
+        private void button_filter_clear_labor_Click(object sender, EventArgs e)
+        {
+            ClearFilterLabor();
+            ApplyFilters();
+        }
+
+        private void grid_labors_CellDoubleClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex < 0) return;
+            var labor = grid_labors.Rows[e.RowIndex].DataBoundItem as DwarfLabor;
+            if (labor == null) return;
+
+            if (labor.IsHeader)
+            {
+                m_filter_dwarf = d => d.Labors.Any(l => l.Category == labor.Category);
+                m_filter_dwarf_caption = string.Format("Matching category {0}", labor.Category);
+                ClearFilterLabor();
+            }
+            else
+            {
+                m_filter_dwarf = d => d.Labors.Contains(labor);
+                m_filter_dwarf_caption = string.Format("Matching labor {0}", labor.Caption);
+                ClearFilterLabor();
+            }
+
+            ApplyFilters();
         }
 
         private void grid_labors_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
@@ -225,6 +256,35 @@ namespace HeavyDuck.DF.DwarfDuck
                 e.FormattingApplied = true;
                 e.Value = "";
             }
+        }
+
+        private void grid_labors_RowsAdded(object sender, DataGridViewRowsAddedEventArgs e)
+        {
+            for (int index = e.RowIndex; index - e.RowIndex < e.RowCount; index++)
+            {
+                var row = grid_labors.Rows[index];
+                var labor = row.DataBoundItem as DwarfLabor;
+                if (labor == null) return;
+
+                // don't use the dwarf list for unskilled labors that may have many workers
+                if (!labor.IsHeader && !labor.HasSkill)
+                {
+                    row.Cells[COLUMN_LABORS_ASSIGNED] = new DataGridViewTextBoxCell();
+                    row.Cells[COLUMN_LABORS_POTENTIAL] = new DataGridViewTextBoxCell();
+                }
+            }
+        }
+
+        private void grid_dwarves_CellDoubleClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex < 0) return;
+            var dwarf = grid_dwarves.Rows[e.RowIndex].DataBoundItem as Dwarf;
+            if (dwarf == null) return;
+
+            ClearFilterDwarf();
+            m_filter_labor = l => (l.IsHeader && dwarf.Labors.Any(dl => dl.Category == l.Category)) || dwarf.Labors.Contains(l);
+            m_filter_labor_caption = string.Format("Matching {0}", dwarf.Name);
+            ApplyFilters();
         }
 
         private void grid_dwarves_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
@@ -283,6 +343,50 @@ namespace HeavyDuck.DF.DwarfDuck
             GameData.UpdateLabors(dwarves);
             grid_dwarves.DataSource = dwarves;
             grid_labors.DataSource = new ObjectBindingList<DwarfLabor>(GameData.GetLabors());
+            ApplyFilters();
+        }
+
+        #endregion
+
+        private void ApplyFilters()
+        {
+            // filter dwarf list
+            var dwarves = grid_dwarves.DataSource as ObjectBindingList<Dwarf>;
+            if (dwarves != null)
+            {
+                dwarves.ApplyFilter(m_filter_dwarf);
+                label_filter_dwarf.Text = m_filter_dwarf_caption;
+                panel_dwarves.Visible = m_filter_dwarf != null;
+            }
+            else
+            {
+                panel_dwarves.Visible = false;
+            }
+
+            // filter labor list
+            var labors = grid_labors.DataSource as ObjectBindingList<DwarfLabor>;
+            if (labors != null)
+            {
+                labors.ApplyFilter(m_filter_labor);
+                label_filter_labor.Text = m_filter_labor_caption;
+                panel_labors.Visible = m_filter_labor != null;
+            }
+            else
+            {
+                panel_labors.Visible = false;
+            }
+        }
+
+        private void ClearFilterDwarf()
+        {
+            m_filter_dwarf = null;
+            m_filter_dwarf_caption = null;
+        }
+
+        private void ClearFilterLabor()
+        {
+            m_filter_labor = null;
+            m_filter_labor_caption = null;
         }
     }
 }

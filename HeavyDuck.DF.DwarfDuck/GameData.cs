@@ -88,7 +88,10 @@ namespace HeavyDuck.DF.DwarfDuck
                 yield return new DwarfLaborHeader(group.Key);
 
                 foreach (var p in group.OrderBy(p => p.Value.Caption))
-                    yield return p.Value;
+                {
+                    if (p.Key != NONE)
+                        yield return p.Value;
+                }
             }
         }
 
@@ -157,7 +160,7 @@ namespace HeavyDuck.DF.DwarfDuck
             switch (category)
             {
                 case "Other":
-                    return Tuple.Create(Color.Black, Color.WhiteSmoke);
+                    return Tuple.Create(Color.Black, Color.LightGray);
                 case "Miner":
                     return Tuple.Create(Color.White, Color.Gray);
                 case "Hauling":
@@ -187,7 +190,7 @@ namespace HeavyDuck.DF.DwarfDuck
                 case "Engineer":
                     return Tuple.Create(Color.White, Color.Firebrick);
                 default:
-                    return Tuple.Create(Color.White, Color.LightGray);
+                    return Tuple.Create(Color.Black, Color.LightGray);
             }
         }
 
