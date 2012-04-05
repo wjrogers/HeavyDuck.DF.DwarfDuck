@@ -21,6 +21,7 @@ namespace HeavyDuck.DF.DwarfDuck
     {
         private const int ITEM_WIDTH = 18;
         private const int ITEM_PADDING = 1;
+        private const int SKILL_WIDTH = 9;
 
         private static readonly ThreadLocal<Dictionary<Color, Brush>> m_brush_cache
             = new ThreadLocal<Dictionary<Color, Brush>>(() => new Dictionary<Color, Brush>());
@@ -99,11 +100,15 @@ namespace HeavyDuck.DF.DwarfDuck
                 }
                 else
                 {
-                    int y_filled = (int)Math.Min(dwarf.Image.Height, Math.Round(dwarf.Image.Height * dwarf.SkillPercent));
-                    var dest = new Rectangle(x, y + dwarf.Image.Height - y_filled, dwarf.Image.Width, y_filled);
-                    var src = new Rectangle(0, dwarf.Image.Height - y_filled, dwarf.Image.Width, y_filled);
+                    var rect_skill = new Rectangle(
+                        x + dwarf.Image.Width - SKILL_WIDTH,
+                        y + dwarf.Image.Height - SKILL_WIDTH,
+                        SKILL_WIDTH,
+                        SKILL_WIDTH);
 
                     graphics.DrawImageUnscaled(dwarf.Image, x, y);
+                    graphics.FillEllipse(Brushes.White, rect_skill);
+                    graphics.FillPie( Brushes.Blue, rect_skill, 0, Math.Min(360, 360 * dwarf.SkillPercent));
                 }
 
                 x += dwarf.Image.Width + ITEM_PADDING;
