@@ -14,7 +14,7 @@ namespace HeavyDuck.DF.DwarfDuck
         private readonly Lazy<DwarfProfession> m_profession;
         private readonly List<DwarfListItem> m_labors_view;
         private readonly List<DwarfListItem> m_labors_potential_view;
-        private readonly int m_menial_count;
+        private readonly int m_unskilled_count;
 
         public Dwarf(dfproto.BasicUnitInfo unit)
         {
@@ -23,7 +23,7 @@ namespace HeavyDuck.DF.DwarfDuck
             m_skills = unit.SkillsList.ToDictionary(s => GameData.GetSkill(s.Id));
             m_profession = new Lazy<DwarfProfession>(() => GameData.GetProfession(m_unit.Profession));
 
-            m_menial_count = m_labors.Count(l => !l.HasSkill);
+            m_unskilled_count = m_labors.Count(l => !l.HasSkill);
 
             m_labors_view = m_labors.Where(l => l.HasSkill).Select(l => new DwarfListItem
             {
@@ -56,11 +56,6 @@ namespace HeavyDuck.DF.DwarfDuck
             get { return m_unit.Gender; }
         }
 
-        public int MenialLaborCount
-        {
-            get { return m_menial_count; }
-        }
-
         public HashSet<DwarfLabor> Labors
         {
             get { return m_labors; }
@@ -74,6 +69,11 @@ namespace HeavyDuck.DF.DwarfDuck
         public List<DwarfListItem> LaborsPotentialView
         {
             get { return m_labors_potential_view; }
+        }
+
+        public int LaborsUnskilledCount
+        {
+            get { return m_unskilled_count; }
         }
 
         public Dictionary<DwarfSkill, dfproto.SkillInfo> Skills

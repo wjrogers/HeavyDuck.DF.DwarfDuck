@@ -18,23 +18,28 @@ namespace HeavyDuck.DF.DwarfDuck
     {
         private const string TOOL_MAIN_REFRESH = "MAIN_REFRESH";
 
-        private const string COLUMN_LABORS_NAME = "labors_name";
         private const string COLUMN_LABORS_ASSIGNED = "labors_assigned";
+        private const string COLUMN_LABORS_CATEGORY = "labors_category";
+        private const string COLUMN_LABORS_NAME = "labors_name";
         private const string COLUMN_LABORS_POTENTIAL = "labors_skilled";
 
         private const string COLUMN_DWARF_GENDER_IMAGE = "dwarf_gender_image";
         private const string COLUMN_DWARF_LABORS = "dwarf_labors";
-        private const string COLUMN_DWARF_MENIAL_COUNT = "dwarf_menial_count";
+        private const string COLUMN_DWARF_UNSKILLED_COUNT = "dwarf_unskilled_count";
         private const string COLUMN_DWARF_NAME = "dwarf_name";
         private const string COLUMN_DWARF_PROFESSION = "dwarf_profession";
         private const string COLUMN_DWARF_IMAGE = "dwarf_image";
         private const string COLUMN_DWARF_SKILLS = "dwarf_skills";
+
+        private readonly Font m_font_header;
 
         public MainForm()
         {
             InitializeComponent();
 
             ToolStripManager.RenderMode = ToolStripManagerRenderMode.Professional;
+
+            m_font_header = new Font("Verdana", 9f, FontStyle.Bold);
 
             this.Load += new EventHandler(MainForm_Load);
             this.Shown += new EventHandler(MainForm_Shown);
@@ -55,6 +60,13 @@ namespace HeavyDuck.DF.DwarfDuck
             grid_labors.MultiSelect = true;
             grid_labors.RowTemplate.Height = 20;
             grid_labors.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+            grid_labors.Columns.Add(new DataGridViewTextBoxColumn()
+            {
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.None,
+                HeaderText = "",
+                Name = COLUMN_LABORS_CATEGORY,
+                Width = 10,
+            });
             grid_labors.Columns.Add(new DataGridViewTextBoxColumn()
             {
                 AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells,
@@ -80,6 +92,7 @@ namespace HeavyDuck.DF.DwarfDuck
             });
             grid_labors.Columns.Add(new DataGridViewTextBoxColumn() { AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill });
             grid_labors.CellFormatting += new DataGridViewCellFormattingEventHandler(grid_labors_CellFormatting);
+            grid_labors.RowsAdded += new DataGridViewRowsAddedEventHandler(grid_labors_RowsAdded);
 
             // configure grid - dwarves
             GridHelper.Initialize(grid_dwarves, true);
@@ -139,16 +152,33 @@ namespace HeavyDuck.DF.DwarfDuck
             grid_dwarves.Columns.Add(new DataGridViewTextBoxColumn()
             {
                 AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells,
-                DataPropertyName = "MenialLaborCount",
+                DataPropertyName = "LaborsUnskilledCount",
                 DefaultCellStyle =
                 {
                     Alignment = DataGridViewContentAlignment.MiddleRight,
                 },
-                HeaderText = "Menials",
-                Name = COLUMN_DWARF_MENIAL_COUNT,
+                HeaderText = "Unskilled",
+                Name = COLUMN_DWARF_UNSKILLED_COUNT,
             });
             grid_dwarves.Columns.Add(new DataGridViewTextBoxColumn() { AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill });
             grid_dwarves.CellFormatting += new DataGridViewCellFormattingEventHandler(grid_dwarves_CellFormatting);
+        }
+
+        private void grid_labors_RowsAdded(object sender, DataGridViewRowsAddedEventArgs e)
+        {
+            for (int index = e.RowIndex; index - e.RowIndex < e.RowCount; index++)
+            {
+                var row = grid_labors.Rows[index];
+                var labor = row.DataBoundItem as DwarfLabor;
+                if (labor == null) return;
+
+                // don't use the dwarf list for unskilled labors that may have many workers
+                if (!labor.IsHeader && !labor.HasSkill)
+                {
+                    row.Cells[COLUMN_LABORS_ASSIGNED] = new DataGridViewTextBoxCell();
+                    row.Cells[COLUMN_LABORS_POTENTIAL] = new DataGridViewTextBoxCell();
+                }
+            }
         }
 
         private void MainForm_Shown(object sender, EventArgs e)
@@ -158,6 +188,43 @@ namespace HeavyDuck.DF.DwarfDuck
 
         private void grid_labors_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
         {
+            if (e.RowIndex < 0) return;
+
+            Tuple<Color, Color> colors;
+            IList<DwarfListItem> dwarves;
+            var labor = grid_labors.Rows[e.RowIndex].DataBoundItem as DwarfLabor;
+            var column = grid_labors.Columns[e.ColumnIndex];
+            if (labor == null) return;
+
+            if (labor.IsHeader)
+            {
+                colors = GameData.GetCategoryColors(labor.Category);
+                e.CellStyle.Font = m_font_header;
+                e.CellStyle.ForeColor = colors.Item1;
+                e.CellStyle.BackColor = colors.Item2;
+            }
+            else if (column.Name == COLUMN_LABORS_CATEGORY)
+            {
+                colors = GameData.GetCategoryColors(labor.Category);
+                e.CellStyle.BackColor = colors.Item2;
+            }
+            else if (column.Name == COLUMN_LABORS_ASSIGNED && !labor.HasSkill)
+            {
+                dwarves = e.Value as IList<DwarfListItem>;
+
+                e.CellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+                e.FormattingApplied = true;
+
+                if (dwarves != null && dwarves.Count > 0)
+                    e.Value = string.Format("{0} dwarves", dwarves.Count);
+                else
+                    e.Value = "";
+            }
+            else if (column.Name == COLUMN_LABORS_POTENTIAL && !labor.HasSkill)
+            {
+                e.FormattingApplied = true;
+                e.Value = "";
+            }
         }
 
         private void grid_dwarves_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
@@ -182,9 +249,19 @@ namespace HeavyDuck.DF.DwarfDuck
                     }
 
                     break;
-                case COLUMN_DWARF_MENIAL_COUNT:
-                    if ((int)e.Value < 1)
-                        e.CellStyle.ForeColor = Color.Gray;
+                case COLUMN_DWARF_UNSKILLED_COUNT:
+                    int count = (int)e.Value;
+
+                    if (count > 0)
+                    {
+                        e.FormattingApplied = true;
+                        e.Value = string.Format("{0} labors", count);
+                    }
+                    else
+                    {
+                        e.FormattingApplied = true;
+                        e.Value = "";
+                    }
                     break;
             }
         }

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using dfproto;
 using HeavyDuck.DF.DFHack;
+using System.Drawing;
 
 namespace HeavyDuck.DF.DwarfDuck
 {
@@ -82,7 +83,13 @@ namespace HeavyDuck.DF.DwarfDuck
 
         public static IEnumerable<DwarfLabor> GetLabors()
         {
-            return m_labors.Values.OrderBy(l => Tuple.Create(l.Category, l.Caption));
+            foreach (var group in m_labors.GroupBy(p => p.Value.Category).OrderBy(g => GetCategoryOrder(g.Key)))
+            {
+                yield return new DwarfLaborHeader(group.Key);
+
+                foreach (var p in group.OrderBy(p => p.Value.Caption))
+                    yield return p.Value;
+            }
         }
 
         public static DwarfLabor GetLaborDefault()
@@ -143,6 +150,84 @@ namespace HeavyDuck.DF.DwarfDuck
         public static string FormatName(dfproto.NameInfo name)
         {
             return string.Format("{0} {1}", name.FirstName, name.LastName);
+        }
+
+        public static Tuple<Color, Color> GetCategoryColors(string category)
+        {
+            switch (category)
+            {
+                case "Other":
+                    return Tuple.Create(Color.Black, Color.WhiteSmoke);
+                case "Miner":
+                    return Tuple.Create(Color.White, Color.Gray);
+                case "Hauling":
+                    return Tuple.Create(Color.Black, Color.DarkGray);
+                case "Woodworker":
+                    return Tuple.Create(Color.White, Color.DarkGoldenrod);
+                case "Stoneworker":
+                    return Tuple.Create(Color.White, Color.Black);
+                case "Administrator":
+                    return Tuple.Create(Color.White, Color.Purple);
+                case "Ranger":
+                    return Tuple.Create(Color.White, Color.ForestGreen);
+                case "Medical":
+                    return Tuple.Create(Color.White, Color.DeepPink);
+                case "Farmer":
+                    return Tuple.Create(Color.White, Color.Brown);
+                case "Craftsman":
+                    return Tuple.Create(Color.White, Color.CornflowerBlue);
+                case "Alchemist":
+                    return Tuple.Create(Color.White, Color.DarkOrchid);
+                case "Fishery Worker":
+                    return Tuple.Create(Color.White, Color.Navy);
+                case "Metalsmith":
+                    return Tuple.Create(Color.White, Color.DarkSlateGray);
+                case "Jeweler":
+                    return Tuple.Create(Color.White, Color.DarkGreen);
+                case "Engineer":
+                    return Tuple.Create(Color.White, Color.Firebrick);
+                default:
+                    return Tuple.Create(Color.White, Color.LightGray);
+            }
+        }
+
+        public static int GetCategoryOrder(string category)
+        {
+            switch (category)
+            {
+                case "Other":
+                    return int.MaxValue;
+                case "Miner":
+                    return 0;
+                case "Hauling":
+                    return int.MaxValue - 2;
+                case "Woodworker":
+                    return 1;
+                case "Stoneworker":
+                    return 2;
+                case "Administrator":
+                    return 3;
+                case "Ranger":
+                    return 4;
+                case "Medical":
+                    return 5;
+                case "Farmer":
+                    return 6;
+                case "Craftsman":
+                    return 7;
+                case "Alchemist":
+                    return 12;
+                case "Fishery Worker":
+                    return 8;
+                case "Metalsmith":
+                    return 9;
+                case "Jeweler":
+                    return 10;
+                case "Engineer":
+                    return 11;
+                default:
+                    return int.MaxValue - 1;
+            }
         }
     }
 }
