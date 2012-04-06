@@ -11,6 +11,7 @@ namespace HeavyDuck.DF.DwarfDuck
     internal static class GameData
     {
         public const int NONE = -1;
+        public const float SKILL_MAX = 18f;
         public const string CATEGORY_HAULING = "Hauling";
         public const string CATEGORY_OTHER = "Other";
 
@@ -57,27 +58,23 @@ namespace HeavyDuck.DF.DwarfDuck
             var lookup_skilled = dwarves
                 .SelectMany(d => d.Skills.Select(s => new { Dwarf = d, SkillPair = s }))
                 .Where(o => o.SkillPair.Value.Level > 0 && !o.Dwarf.Labors.Contains(o.SkillPair.Key.Labor))
-                .ToLookup(o => o.SkillPair.Key.Labor);
+                .ToLookup(o => o.SkillPair.Key.Labor, o => o.Dwarf);
 
             foreach (var labor in m_labors.Values)
             {
                 labor.UnitsAssigned.Clear();
-                labor.UnitsAssigned.AddRange(lookup_assigned[labor].Select(d => new DwarfListItem
-                {
-                    UnitID = d.UnitID,
-                    SkillID = labor.Skill.ID,
-                    SkillLevel = d.GetSkillLevel(labor),
-                    Image = d.Image,
-                }));
+                labor.UnitsAssigned.AddRange(lookup_assigned[labor].Select(d => new DwarfListItem(
+                    d.Image,
+                    d,
+                    labor,
+                    DwarfListMode.Labor)));
 
                 labor.UnitsPotential.Clear();
-                labor.UnitsPotential.AddRange(lookup_skilled[labor].Select(o => new DwarfListItem
-                {
-                    UnitID = o.Dwarf.UnitID,
-                    SkillID = labor.Skill.ID,
-                    SkillLevel = o.SkillPair.Value.Level,
-                    Image = o.Dwarf.Image,
-                }));
+                labor.UnitsPotential.AddRange(lookup_skilled[labor].Select(d => new DwarfListItem(
+                    d.Image,
+                    d,
+                    labor,
+                    DwarfListMode.Labor)));
             }
         }
 

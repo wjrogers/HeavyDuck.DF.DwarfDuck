@@ -88,46 +88,78 @@ namespace HeavyDuck.DF.DwarfDuck
                 return;
 
             // draw our list of dwarfs
-            foreach (var dwarf in list)
+            foreach (var item in list)
             {
-                if (dwarf.Image == null) continue;
+                if (item.Image == null) continue;
 
-                int y = rect_paint.Top + rect_paint.Height / 2 - dwarf.Image.Height / 2;
+                int y = rect_paint.Top + rect_paint.Height / 2 - item.Image.Height / 2;
 
-                if (1f <= dwarf.SkillPercent)
+                if (1f <= item.SkillPercent)
                 {
-                    graphics.DrawImageUnscaled(dwarf.Image, x, y);
+                    graphics.DrawImageUnscaled(item.Image, x, y);
                 }
                 else
                 {
                     var rect_skill = new Rectangle(
-                        x + dwarf.Image.Width - SKILL_WIDTH,
-                        y + dwarf.Image.Height - SKILL_WIDTH,
+                        x + item.Image.Width - SKILL_WIDTH,
+                        y + item.Image.Height - SKILL_WIDTH,
                         SKILL_WIDTH,
                         SKILL_WIDTH);
 
-                    graphics.DrawImageUnscaled(dwarf.Image, x, y);
+                    graphics.DrawImageUnscaled(item.Image, x, y);
                     graphics.FillEllipse(Brushes.White, rect_skill);
-                    graphics.FillPie( Brushes.Blue, rect_skill, 0, Math.Min(360, 360 * dwarf.SkillPercent));
+                    graphics.FillPie( Brushes.Blue, rect_skill, 0, Math.Min(360, 360 * item.SkillPercent));
                 }
 
-                x += dwarf.Image.Width + ITEM_PADDING;
+                x += item.Image.Width + ITEM_PADDING;
             }
         }
+
+        public DwarfListItem DwarfHitTest(DataGridViewCellMouseEventArgs e)
+        {
+            var list = GetValue(e.RowIndex) as IList<DwarfListItem>;
+            if (list == null) return null;
+            var style = this.InheritedStyle;
+
+            int index = (e.X - style.Padding.Left) / (ITEM_WIDTH + ITEM_PADDING);
+            if (index < 0 || list.Count <= index)
+                return null;
+            else
+                return list[index];
+        }
+    }
+
+    internal enum DwarfListMode
+    {
+        Dwarf,
+        Labor,
     }
 
     internal class DwarfListItem
     {
-        private const float SKILL_MAX = 18f;
+        public DwarfListItem(Image image, Dwarf dwarf, DwarfLabor labor, DwarfListMode mode)
+        {
+            this.Image = image;
+            this.Dwarf = dwarf;
+            this.Labor = labor;
+            this.Mode = mode;
+            this.SkillInfo = dwarf.GetSkillInfo(labor);
+        }
 
-        public int UnitID { get; set; }
-        public int SkillID { get; set; }
-        public int SkillLevel { get; set; }
-        public Image Image { get; set; }
+        public Image Image { get; private set; }
+        public Dwarf Dwarf { get; private set; }
+        public DwarfLabor Labor { get; private set; }
+        public DwarfListMode Mode { get; private set; }
+        public dfproto.SkillInfo SkillInfo { get; private set; }
+
+        public string Caption
+        {
+            get { return this.Mode == DwarfListMode.Labor ? Labor.Caption : Dwarf.Name; }
+        }
 
         public float SkillPercent
         {
-            get { return this.SkillLevel / SKILL_MAX; }
+            get { return this.SkillInfo.Level / GameData.SKILL_MAX; }
         }
     }
 }

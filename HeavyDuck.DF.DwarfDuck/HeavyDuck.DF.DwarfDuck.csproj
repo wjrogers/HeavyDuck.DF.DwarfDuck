@@ -60,6 +60,12 @@
     <Compile Include="DwarfProfession.cs" />
     <Compile Include="Dwarf.cs" />
     <Compile Include="DwarfSkill.cs" />
+    <Compile Include="DwarfTip.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="DwarfTip.Designer.cs">
+      <DependentUpon>DwarfTip.cs</DependentUpon>
+    </Compile>
     <Compile Include="GameData.cs" />
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>
@@ -69,6 +75,9 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <EmbeddedResource Include="DwarfTip.resx">
+      <DependentUpon>DwarfTip.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="MainForm.resx">
       <DependentUpon>MainForm.cs</DependentUpon>
     </EmbeddedResource>

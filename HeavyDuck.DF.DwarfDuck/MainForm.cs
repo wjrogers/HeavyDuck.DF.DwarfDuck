@@ -32,6 +32,7 @@ namespace HeavyDuck.DF.DwarfDuck
         private const string COLUMN_DWARF_SKILLS = "dwarf_skills";
 
         private readonly Font m_font_header;
+        private readonly DwarfTip m_dwarftip;
 
         private Func<Dwarf, bool> m_filter_dwarf;
         private string m_filter_dwarf_caption;
@@ -45,6 +46,7 @@ namespace HeavyDuck.DF.DwarfDuck
             ToolStripManager.RenderMode = ToolStripManagerRenderMode.Professional;
 
             m_font_header = new Font("Verdana", 9f, FontStyle.Bold);
+            m_dwarftip = new DwarfTip();
 
             this.Load += new EventHandler(MainForm_Load);
             this.Shown += new EventHandler(MainForm_Shown);
@@ -102,6 +104,8 @@ namespace HeavyDuck.DF.DwarfDuck
             grid_labors.Columns.Add(new DataGridViewTextBoxColumn() { AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill });
             grid_labors.CellDoubleClick += new DataGridViewCellEventHandler(grid_labors_CellDoubleClick);
             grid_labors.CellFormatting += new DataGridViewCellFormattingEventHandler(grid_labors_CellFormatting);
+            grid_labors.CellMouseLeave += new DataGridViewCellEventHandler(grid_CellMouseLeave);
+            grid_labors.CellMouseMove += new DataGridViewCellMouseEventHandler(grid_CellMouseMove);
             grid_labors.RowsAdded += new DataGridViewRowsAddedEventHandler(grid_labors_RowsAdded);
 
             // configure grid - dwarves
@@ -173,6 +177,8 @@ namespace HeavyDuck.DF.DwarfDuck
             grid_dwarves.Columns.Add(new DataGridViewTextBoxColumn() { AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill });
             grid_dwarves.CellDoubleClick += new DataGridViewCellEventHandler(grid_dwarves_CellDoubleClick);
             grid_dwarves.CellFormatting += new DataGridViewCellFormattingEventHandler(grid_dwarves_CellFormatting);
+            grid_dwarves.CellMouseLeave += new DataGridViewCellEventHandler(grid_CellMouseLeave);
+            grid_dwarves.CellMouseMove += new DataGridViewCellMouseEventHandler(grid_CellMouseMove);
 
             // initialize filter UI state
             ApplyFilters();
@@ -326,6 +332,46 @@ namespace HeavyDuck.DF.DwarfDuck
             }
         }
 
+        private void grid_CellMouseLeave(object sender, DataGridViewCellEventArgs e)
+        {
+            if (m_dwarftip.Visible)
+                m_dwarftip.Hide();
+        }
+
+        private void grid_CellMouseMove(object sender, DataGridViewCellMouseEventArgs e)
+        {
+            Rectangle rect;
+            if (e.ColumnIndex < 0 || e.RowIndex < 0) return;
+
+            // get the grid, cell, and dwarf the mouse is over
+            var grid = sender as DataGridView;
+            var cell = grid[e.ColumnIndex, e.RowIndex] as DwarfListCell;
+            if (cell == null || e.RowIndex < 0) return;
+            var dwarf = cell.DwarfHitTest(e);
+
+            // no hit?
+            if (dwarf == null)
+            {
+                if (m_dwarftip.Visible)
+                    m_dwarftip.Hide();
+                return;
+            }
+
+            // get the display rectangle of the cell we are hovering
+            rect = grid.GetCellDisplayRectangle(e.ColumnIndex, e.RowIndex, false);
+            rect = grid.RectangleToScreen(rect);
+
+            // prepare the tip
+            m_dwarftip.Data = dwarf;
+            m_dwarftip.AutoPosition(this, rect);
+
+            // show or redraw it
+            if (!m_dwarftip.Visible)
+                m_dwarftip.Show(this);
+            else
+                m_dwarftip.Invalidate();
+        }
+
         private void toolStrip_Refresh(object sender, EventArgs e)
         {
             DFHackReply<ListUnitsOut> reply;
@@ -375,6 +421,10 @@ namespace HeavyDuck.DF.DwarfDuck
             {
                 panel_labors.Visible = false;
             }
+
+            // clear annoying default selections
+            grid_dwarves.ClearSelection();
+            grid_labors.ClearSelection();
         }
 
         private void ClearFilterDwarf()
