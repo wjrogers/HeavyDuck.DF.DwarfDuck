@@ -136,7 +136,7 @@ namespace HeavyDuck.DF.DwarfDuck
             width = Math.Max(width, measured.Width + LAYOUT_PADDING * 2);
 
             // draw this labor skill
-            DrawSkillBar(g, m_data, draw, ref y, ref width, m_data.Labor.Caption);
+            DrawSkillBar(g, m_data, Brushes.Black, draw, ref y, ref width, m_data.Labor.Caption);
 
             // depending on mode...
             switch (m_data.Mode)
@@ -146,27 +146,29 @@ namespace HeavyDuck.DF.DwarfDuck
                     var list_skilled = m_data.Dwarf.Labors
                         .Where(l => l.HasSkill && l != m_data.Labor)
                         .Select(l => new DwarfListItem(l.Skill.Profession.Image, m_data.Dwarf, l, m_data.Mode));
-                    DrawDwarfList(g, MESSAGE_DWARF_LABORS_SKILLED, list_skilled, draw, ref y, ref width);
+                    DrawDwarfList(g, MESSAGE_DWARF_LABORS_SKILLED, list_skilled, Brushes.Navy, draw, ref y, ref width);
 
                     // draw skills unused
                     var list_unused = m_data.Dwarf.Skills
                         .Where(p => !m_data.Dwarf.Labors.Contains(p.Key.Labor))
                         .Select(p => new DwarfListItem(p.Key.Profession.Image, m_data.Dwarf, p.Key.Labor, m_data.Mode));
-                    DrawDwarfList(g, MESSAGE_DWARF_SKILLS_UNUSED, list_unused, draw, ref y, ref width);
+                    DrawDwarfList(g, MESSAGE_DWARF_SKILLS_UNUSED, list_unused, Brushes.DarkSlateGray, draw, ref y, ref width);
 
                     // draw unskilled labors
                     var list_unskilled = m_data.Dwarf.Labors
                         .Where(l => !l.HasSkill)
                         .Select(l => new DwarfListItem(l.Skill.Profession.Image, m_data.Dwarf, l, m_data.Mode));
-                    DrawDwarfList(g, MESSAGE_DWARF_LABORS_UNSKILLED, list_unskilled, draw, ref y, ref width);
+                    DrawDwarfList(g, MESSAGE_DWARF_LABORS_UNSKILLED, list_unskilled, Brushes.Firebrick, draw, ref y, ref width);
 
                     break;
                 case DwarfListMode.Dwarf:
                     // draw other dwarfs assigned
-                    DrawDwarfList(g, MESSAGE_UNITS_ASSIGNED, m_data.Labor.UnitsAssigned.Where(i => i.Dwarf != m_data.Dwarf), draw, ref y, ref width);
+                    var list_assigned = m_data.Labor.UnitsAssigned.Where(i => i.Dwarf != m_data.Dwarf);
+                    DrawDwarfList(g, MESSAGE_UNITS_ASSIGNED, list_assigned, Brushes.Navy, draw, ref y, ref width);
 
                     // draw other dwarfs assigned
-                    DrawDwarfList(g, MESSAGE_UNITS_POTENTIAL, m_data.Labor.UnitsPotential.Where(i => i.Dwarf != m_data.Dwarf), draw, ref y, ref width);
+                    var list_potential = m_data.Labor.UnitsPotential.Where(i => i.Dwarf != m_data.Dwarf);
+                    DrawDwarfList(g, MESSAGE_UNITS_POTENTIAL, list_potential, Brushes.DarkSlateGray, draw, ref y, ref width);
 
                     break;
             }
@@ -175,7 +177,7 @@ namespace HeavyDuck.DF.DwarfDuck
             return new SizeF(width, y + LAYOUT_PADDING);
         }
 
-        private void DrawDwarfList(Graphics g, string header, IEnumerable<DwarfListItem> dwarves, bool draw, ref int y, ref float width)
+        private void DrawDwarfList(Graphics g, string header, IEnumerable<DwarfListItem> dwarves, Brush brush, bool draw, ref int y, ref float width)
         {
             SizeF measured;
             var list = dwarves.OrderBy(d => Tuple.Create(-d.SkillInfo.Level, d.Caption)).ToList();
@@ -184,7 +186,7 @@ namespace HeavyDuck.DF.DwarfDuck
             y += LAYOUT_PADDING;
             measured = g.MeasureString(header, m_font_bold_small);
             if (draw)
-                g.DrawString(header, m_font_bold_small, Brushes.Black, LAYOUT_PADDING, y);
+                g.DrawString(header, m_font_bold_small, brush, LAYOUT_PADDING, y);
             y += (int)Math.Ceiling(measured.Height);
 
             // no data?
@@ -192,49 +194,49 @@ namespace HeavyDuck.DF.DwarfDuck
             {
                 measured = g.MeasureString(MESSAGE_NONE, m_font_italic);
                 if (draw)
-                    g.DrawString(MESSAGE_NONE, m_font_italic, Brushes.Black, LAYOUT_PADDING * 2, y);
+                    g.DrawString(MESSAGE_NONE, m_font_italic, brush, LAYOUT_PADDING * 2, y);
                 y += (int)Math.Ceiling(measured.Height);
             }
 
             // draw the list
             foreach (var item in list)
-                DrawSkillBar(g, item, draw, ref y, ref width);
+                DrawSkillBar(g, item, brush, draw, ref y, ref width);
         }
 
-        private void DrawSkillBar(Graphics g, DwarfListItem item, bool draw, ref int y, ref float width, string caption = null)
+        private void DrawSkillBar(Graphics g, DwarfListItem item, Brush brush, bool draw, ref int y, ref float width, string caption = null)
         {
-            var brush = item.SkillInfo.Level >= GameData.SKILL_MAX ? Brushes.Gold : SystemBrushes.ControlDarkDark;
-            var y_inner = y + (SKILL_BAR_HEIGHT - SKILL_BAR_HEIGHT_INNER) / 2;
-
             // use caption override?
             if (caption == null)
                 caption = item.Caption;
 
+            // draw the image
+            if (draw)
+                g.DrawImageUnscaled(item.Image, LAYOUT_PADDING * 2, y);
+
+            // skill bar
             if (draw && item.Labor.HasSkill)
             {
-                // draw background
-                g.FillRectangle(SystemBrushes.ControlLightLight, LAYOUT_PADDING * 2, y_inner, SKILL_BAR_WIDTH, SKILL_BAR_HEIGHT_INNER);
-                g.DrawRectangle(SystemPens.ControlDark, LAYOUT_PADDING * 2, y_inner, SKILL_BAR_WIDTH, SKILL_BAR_HEIGHT_INNER + 1);
+                var brush_pip = item.SkillInfo.Level >= GameData.SKILL_MAX ? Brushes.Gold : brush;
+                var rect_background = new Rectangle(
+                    LAYOUT_PADDING * 3 + item.Image.Width,
+                    y + (SKILL_BAR_HEIGHT - SKILL_BAR_HEIGHT_INNER) / 2,
+                    SKILL_BAR_WIDTH,
+                    SKILL_BAR_HEIGHT_INNER);
 
-                // draw the level bars
+                // draw background
+                g.FillRectangle(SystemBrushes.ControlLightLight, rect_background);
+                g.DrawRectangle(SystemPens.ControlDarkDark, rect_background.Left, rect_background.Top, rect_background.Width + 1, rect_background.Height + 1);
+
+                // draw the level pips
                 for (int i = 1; i <= item.SkillInfo.Level && i <= GameData.SKILL_MAX; ++i)
                 {
                     g.FillRectangle(
-                        brush,
-                        LAYOUT_PADDING * 2 + SKILL_BAR_WIDTH - SKILL_BAR_BORDER - (SKILL_BAR_SEGMENT + SKILL_BAR_PADDING) * i,
-                        y_inner + SKILL_BAR_BORDER + SKILL_BAR_PADDING + 1,
+                        brush_pip,
+                        rect_background.Left + SKILL_BAR_WIDTH - SKILL_BAR_BORDER - (SKILL_BAR_SEGMENT + SKILL_BAR_PADDING) * i + SKILL_BAR_PADDING,
+                        rect_background.Top + SKILL_BAR_BORDER + SKILL_BAR_PADDING + 1,
                         SKILL_BAR_SEGMENT,
                         SKILL_BAR_SEGMENT);
                 }
-            }
-
-            // draw the image
-            if (draw)
-            {
-                var pos = item.Labor.HasSkill
-                    ? new Point(LAYOUT_PADDING * 3 + SKILL_BAR_WIDTH, y)
-                    : new Point(LAYOUT_PADDING * 2, y);
-                g.DrawImageUnscaled(item.Image, pos);
             }
 
             // draw the caption
@@ -243,7 +245,7 @@ namespace HeavyDuck.DF.DwarfDuck
                 ? new Rectangle(LAYOUT_PADDING * 4 + SKILL_BAR_WIDTH + item.Image.Width, (int)y, (int)Math.Ceiling(measured.Width), SKILL_BAR_HEIGHT)
                 : new Rectangle(LAYOUT_PADDING * 3 + item.Image.Width, (int)y, (int)Math.Ceiling(measured.Width), SKILL_BAR_HEIGHT);
             if (draw)
-                g.DrawString(caption, this.Font, Brushes.Black, rect_caption, m_format_left_center);
+                g.DrawString(caption, this.Font, brush, rect_caption, m_format_left_center);
             width = Math.Max(width, rect_caption.Right + LAYOUT_PADDING);
 
             // increment measurements
