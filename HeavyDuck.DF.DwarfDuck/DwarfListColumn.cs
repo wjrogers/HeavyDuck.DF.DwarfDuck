@@ -19,9 +19,9 @@ namespace HeavyDuck.DF.DwarfDuck
 
     internal class DwarfListCell : DataGridViewCell
     {
-        private const int ITEM_WIDTH = 18;
+        private const int ITEM_WIDTH = 18 + (ITEM_PADDING + PIP_SIZE) * 3 + ITEM_PADDING;
         private const int ITEM_PADDING = 1;
-        private const int SKILL_WIDTH = 9;
+        private const int PIP_SIZE = 2;
 
         private static readonly ThreadLocal<Dictionary<Color, Brush>> m_brush_cache
             = new ThreadLocal<Dictionary<Color, Brush>>(() => new Dictionary<Color, Brush>());
@@ -92,26 +92,30 @@ namespace HeavyDuck.DF.DwarfDuck
             {
                 if (item.Image == null) continue;
 
+                // center vertically in the cell I guess
                 int y = rect_paint.Top + rect_paint.Height / 2 - item.Image.Height / 2;
 
-                if (1f <= item.SkillPercent)
-                {
-                    graphics.DrawImageUnscaled(item.Image, x, y);
-                }
-                else
-                {
-                    var rect_skill = new Rectangle(
-                        x + item.Image.Width - SKILL_WIDTH,
-                        y + item.Image.Height - SKILL_WIDTH,
-                        SKILL_WIDTH,
-                        SKILL_WIDTH);
-
-                    graphics.DrawImageUnscaled(item.Image, x, y);
-                    graphics.FillEllipse(Brushes.White, rect_skill);
-                    graphics.FillPie( Brushes.Blue, rect_skill, 0, Math.Min(360, 360 * item.SkillPercent));
-                }
-
+                // draw the image
+                graphics.DrawImageUnscaled(item.Image, x, y);
                 x += item.Image.Width + ITEM_PADDING;
+
+                // draw skill pips, column 1
+                for (int i = 1; i <= item.SkillInfo.Level && i <= 6; ++i)
+                    graphics.FillRectangle(Brushes.Black, x, y + item.Image.Height - i * (PIP_SIZE + ITEM_PADDING) + 1, PIP_SIZE, PIP_SIZE);
+                x += PIP_SIZE + ITEM_PADDING;
+
+                // draw skill pips, column 2
+                for (int i = 7; i <= item.SkillInfo.Level && i <= 12; ++i)
+                    graphics.FillRectangle(Brushes.Black, x, y + item.Image.Height - (i - 6) * (PIP_SIZE + ITEM_PADDING) + 1, PIP_SIZE, PIP_SIZE);
+                x += PIP_SIZE + ITEM_PADDING;
+
+                // draw skill pips, column 3
+                for (int i = 13; i <= item.SkillInfo.Level && i <= 18; ++i)
+                    graphics.FillRectangle(Brushes.Black, x, y + item.Image.Height - (i - 12) * (PIP_SIZE + ITEM_PADDING) + 1, PIP_SIZE, PIP_SIZE);
+                x += PIP_SIZE + ITEM_PADDING;
+
+                // one more pixel of spacing
+                x += ITEM_PADDING;
             }
         }
 
