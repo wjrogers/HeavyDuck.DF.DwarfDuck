@@ -32,6 +32,7 @@ namespace HeavyDuck.DF.DwarfDuck
         private readonly StringFormat m_format_left_center;
 
         private DwarfListItem m_data;
+        private DwarfListMode m_mode = DwarfListMode.Dwarf;
 
         public DwarfTip()
         {
@@ -55,20 +56,15 @@ namespace HeavyDuck.DF.DwarfDuck
                 this.ClientSize = DrawTip(g, false).ToSize();
         }
 
-        public DwarfListItem Data
+        public void SetData(DwarfListItem data, DwarfListMode mode)
         {
-            get { return m_data; }
-            set
-            {
-                if (value == m_data) return;
+            // store it
+            m_data = data;
+            m_mode = mode;
 
-                // store it
-                m_data = value;
-
-                // measure it
-                using (var g = this.CreateGraphics())
-                    this.ClientSize = DrawTip(g, false).ToSize();
-            }
+            // measure it
+            using (var g = this.CreateGraphics())
+                this.ClientSize = DrawTip(g, false).ToSize();
         }
 
         public void AutoPosition(Form owner, Rectangle rect)
@@ -136,39 +132,39 @@ namespace HeavyDuck.DF.DwarfDuck
             width = Math.Max(width, measured.Width + LAYOUT_PADDING * 2);
 
             // draw this labor skill
-            DrawSkillBar(g, m_data, Brushes.Black, draw, ref y, ref width, m_data.Labor.Caption);
+            DrawSkillBar(g, m_data, Brushes.Black, m_data.Labor.Caption, draw, ref y, ref width);
 
             // depending on mode...
-            switch (m_data.Mode)
+            switch (m_mode)
             {
                 case DwarfListMode.Labor:
                     // draw skilled labors
                     var list_skilled = m_data.Dwarf.Labors
                         .Where(l => l.HasSkill && l != m_data.Labor)
-                        .Select(l => new DwarfListItem(l.Skill.Profession.Image, m_data.Dwarf, l, m_data.Mode));
-                    DrawDwarfList(g, MESSAGE_DWARF_LABORS_SKILLED, list_skilled, Brushes.Navy, draw, ref y, ref width);
-
-                    // draw skills unused
-                    var list_unused = m_data.Dwarf.Skills
-                        .Where(p => !m_data.Dwarf.Labors.Contains(p.Key.Labor))
-                        .Select(p => new DwarfListItem(p.Key.Profession.Image, m_data.Dwarf, p.Key.Labor, m_data.Mode));
-                    DrawDwarfList(g, MESSAGE_DWARF_SKILLS_UNUSED, list_unused, Brushes.DarkSlateGray, draw, ref y, ref width);
+                        .Select(l => new DwarfListItem(l.Skill.Profession.Image, m_data.Dwarf, l));
+                    DrawDwarfList(g, MESSAGE_DWARF_LABORS_SKILLED, list_skilled, DwarfListMode.Labor, Brushes.Navy, draw, ref y, ref width);
 
                     // draw unskilled labors
                     var list_unskilled = m_data.Dwarf.Labors
                         .Where(l => !l.HasSkill)
-                        .Select(l => new DwarfListItem(l.Skill.Profession.Image, m_data.Dwarf, l, m_data.Mode));
-                    DrawDwarfList(g, MESSAGE_DWARF_LABORS_UNSKILLED, list_unskilled, Brushes.Firebrick, draw, ref y, ref width);
+                        .Select(l => new DwarfListItem(l.Skill.Profession.Image, m_data.Dwarf, l));
+                    DrawDwarfList(g, MESSAGE_DWARF_LABORS_UNSKILLED, list_unskilled, DwarfListMode.Labor, Brushes.Firebrick, draw, ref y, ref width);
+
+                    // draw skills unused
+                    var list_unused = m_data.Dwarf.Skills
+                        .Where(p => p.Key.HasLabor && !m_data.Dwarf.Labors.Contains(p.Key.Labor))
+                        .Select(p => new DwarfListItem(p.Key.Profession.Image, m_data.Dwarf, p.Key.Labor));
+                    DrawDwarfList(g, MESSAGE_DWARF_SKILLS_UNUSED, list_unused, DwarfListMode.Labor, Brushes.DarkSlateGray, draw, ref y, ref width);
 
                     break;
                 case DwarfListMode.Dwarf:
                     // draw other dwarfs assigned
                     var list_assigned = m_data.Labor.UnitsAssigned.Where(i => i.Dwarf != m_data.Dwarf);
-                    DrawDwarfList(g, MESSAGE_UNITS_ASSIGNED, list_assigned, Brushes.Navy, draw, ref y, ref width);
+                    DrawDwarfList(g, MESSAGE_UNITS_ASSIGNED, list_assigned, DwarfListMode.Dwarf, Brushes.Navy, draw, ref y, ref width);
 
                     // draw other dwarfs assigned
                     var list_potential = m_data.Labor.UnitsPotential.Where(i => i.Dwarf != m_data.Dwarf);
-                    DrawDwarfList(g, MESSAGE_UNITS_POTENTIAL, list_potential, Brushes.DarkSlateGray, draw, ref y, ref width);
+                    DrawDwarfList(g, MESSAGE_UNITS_POTENTIAL, list_potential, DwarfListMode.Dwarf, Brushes.DarkSlateGray, draw, ref y, ref width);
 
                     break;
             }
@@ -177,10 +173,10 @@ namespace HeavyDuck.DF.DwarfDuck
             return new SizeF(width, y + LAYOUT_PADDING);
         }
 
-        private void DrawDwarfList(Graphics g, string header, IEnumerable<DwarfListItem> dwarves, Brush brush, bool draw, ref int y, ref float width)
+        private void DrawDwarfList(Graphics g, string header, IEnumerable<DwarfListItem> dwarves, DwarfListMode mode, Brush brush, bool draw, ref int y, ref float width)
         {
             SizeF measured;
-            var list = dwarves.OrderBy(d => Tuple.Create(-d.SkillInfo.Level, d.Caption)).ToList();
+            var list = dwarves.OrderBy(d => Tuple.Create(-d.SkillInfo.Level, d.GetCaption(mode))).ToList();
 
             // header
             y += LAYOUT_PADDING;
@@ -200,15 +196,11 @@ namespace HeavyDuck.DF.DwarfDuck
 
             // draw the list
             foreach (var item in list)
-                DrawSkillBar(g, item, brush, draw, ref y, ref width);
+                DrawSkillBar(g, item, brush, item.GetCaption(mode), draw, ref y, ref width);
         }
 
-        private void DrawSkillBar(Graphics g, DwarfListItem item, Brush brush, bool draw, ref int y, ref float width, string caption = null)
+        private void DrawSkillBar(Graphics g, DwarfListItem item, Brush brush, string caption, bool draw, ref int y, ref float width)
         {
-            // use caption override?
-            if (caption == null)
-                caption = item.Caption;
-
             // draw the image
             if (draw)
                 g.DrawImageUnscaled(item.Image, LAYOUT_PADDING * 2, y);

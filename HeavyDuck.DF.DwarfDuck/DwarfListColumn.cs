@@ -137,29 +137,35 @@ namespace HeavyDuck.DF.DwarfDuck
 
     internal class DwarfListItem
     {
-        public DwarfListItem(Image image, Dwarf dwarf, DwarfLabor labor, DwarfListMode mode)
+        public DwarfListItem(Image image, Dwarf dwarf, DwarfLabor labor)
         {
             this.Image = image;
             this.Dwarf = dwarf;
             this.Labor = labor;
-            this.Mode = mode;
             this.SkillInfo = dwarf.GetSkillInfo(labor);
         }
 
         public Image Image { get; private set; }
         public Dwarf Dwarf { get; private set; }
         public DwarfLabor Labor { get; private set; }
-        public DwarfListMode Mode { get; private set; }
         public dfproto.SkillInfo SkillInfo { get; private set; }
-
-        public string Caption
-        {
-            get { return this.Mode == DwarfListMode.Labor ? Labor.Caption : Dwarf.Name; }
-        }
 
         public float SkillPercent
         {
             get { return this.SkillInfo.Level / GameData.SKILL_MAX; }
+        }
+
+        public string GetCaption(DwarfListMode mode)
+        {
+            switch (mode)
+            {
+                case DwarfListMode.Dwarf:
+                    return this.Dwarf.Name;
+                case DwarfListMode.Labor:
+                    return this.Labor.Caption;
+                default:
+                    return "?";
+            }
         }
     }
 }

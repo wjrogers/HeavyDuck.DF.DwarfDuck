@@ -362,7 +362,7 @@ namespace HeavyDuck.DF.DwarfDuck
             rect = grid.RectangleToScreen(rect);
 
             // prepare the tip
-            m_dwarftip.Data = dwarf;
+            m_dwarftip.SetData(dwarf, grid == grid_labors ? DwarfListMode.Labor : DwarfListMode.Dwarf);
             m_dwarftip.AutoPosition(this, rect);
 
             // show or redraw it

@@ -28,13 +28,11 @@ namespace HeavyDuck.DF.DwarfDuck
             m_labors_view = m_labors.Where(l => l.HasSkill).Select(l => new DwarfListItem(
                 l.Skill.Profession.Image,
                 this,
-                l,
-                DwarfListMode.Dwarf)).ToList();
-            m_labors_potential_view = m_skills.Where(p => !m_labors.Contains(p.Key.Labor)).Select(p => new DwarfListItem(
+                l)).ToList();
+            m_labors_potential_view = m_skills.Where(p => p.Key.HasLabor && !m_labors.Contains(p.Key.Labor)).Select(p => new DwarfListItem(
                 p.Key.Profession.Image,
                 this,
-                p.Key.Labor,
-                DwarfListMode.Dwarf)).ToList();
+                p.Key.Labor)).ToList();
         }
 
         public int UnitID

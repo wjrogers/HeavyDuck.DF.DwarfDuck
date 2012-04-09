@@ -63,18 +63,10 @@ namespace HeavyDuck.DF.DwarfDuck
             foreach (var labor in m_labors.Values)
             {
                 labor.UnitsAssigned.Clear();
-                labor.UnitsAssigned.AddRange(lookup_assigned[labor].Select(d => new DwarfListItem(
-                    d.Image,
-                    d,
-                    labor,
-                    DwarfListMode.Labor)));
+                labor.UnitsAssigned.AddRange(lookup_assigned[labor].Select(d => new DwarfListItem(d.Image, d, labor)));
 
                 labor.UnitsPotential.Clear();
-                labor.UnitsPotential.AddRange(lookup_skilled[labor].Select(d => new DwarfListItem(
-                    d.Image,
-                    d,
-                    labor,
-                    DwarfListMode.Labor)));
+                labor.UnitsPotential.AddRange(lookup_skilled[labor].Select(d => new DwarfListItem(d.Image, d, labor)));
             }
         }
 
