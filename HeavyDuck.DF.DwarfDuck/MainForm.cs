@@ -295,6 +295,14 @@ namespace HeavyDuck.DF.DwarfDuck
 
         private void grid_dwarves_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
         {
+            var dwarf = grid_dwarves.Rows[e.RowIndex].DataBoundItem as Dwarf;
+            if (dwarf == null) return;
+
+            // general stuff
+            if (dwarf.IsMigrant)
+                e.CellStyle.BackColor = Color.FromArgb(200, 200, 255);
+
+            // column-specific stuff
             switch (grid_dwarves.Columns[e.ColumnIndex].Name)
             {
                 case COLUMN_DWARF_GENDER_IMAGE:

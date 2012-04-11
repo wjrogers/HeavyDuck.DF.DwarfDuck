@@ -268,6 +268,7 @@ namespace HeavyDuck.DF.DFHack
                     Labors = true,
                     Profession = true,
                     Skills = true,
+                    MiscTraits = true,
                 }.Build(),
             };
 

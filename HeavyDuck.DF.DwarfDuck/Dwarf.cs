@@ -8,6 +8,8 @@ namespace HeavyDuck.DF.DwarfDuck
 {
     internal class Dwarf
     {
+        private const int MISC_TRAIT_MIGRANT_COUNTER = 7;
+
         private readonly dfproto.BasicUnitInfo m_unit;
         private readonly HashSet<DwarfLabor> m_labors;
         private readonly Dictionary<DwarfSkill, dfproto.SkillInfo> m_skills;
@@ -15,6 +17,7 @@ namespace HeavyDuck.DF.DwarfDuck
         private readonly List<DwarfListItem> m_labors_view;
         private readonly List<DwarfListItem> m_labors_potential_view;
         private readonly int m_unskilled_count;
+        private readonly int m_migrant_counter = 0;
 
         public Dwarf(dfproto.BasicUnitInfo unit)
         {
@@ -24,6 +27,11 @@ namespace HeavyDuck.DF.DwarfDuck
             m_profession = new Lazy<DwarfProfession>(() => GameData.GetProfession(m_unit.Profession));
 
             m_unskilled_count = m_labors.Count(l => !l.HasSkill);
+
+            // look for the migrant counter to identify new migrants
+            var migrant_counter_trait = unit.MiscTraitsList.FirstOrDefault(t => t.Id == MISC_TRAIT_MIGRANT_COUNTER);
+            if (migrant_counter_trait != null)
+                m_migrant_counter = migrant_counter_trait.Value;
 
             m_labors_view = m_labors.Where(l => l.HasSkill).Select(l => new DwarfListItem(
                 l.Skill.Profession.Image,
@@ -88,6 +96,11 @@ namespace HeavyDuck.DF.DwarfDuck
         public List<DwarfListItem> AssignedLabors
         {
             get { return m_labors_view; }
+        }
+
+        public bool IsMigrant
+        {
+            get { return m_migrant_counter > 0; }
         }
 
         public dfproto.SkillInfo GetSkillInfo(DwarfLabor labor)
