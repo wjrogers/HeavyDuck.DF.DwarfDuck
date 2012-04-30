@@ -67,7 +67,7 @@ namespace HeavyDuck.DF.DFHack
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
     public struct RPCMessageHeader
     {
-        public const int MAX_MESSAGE_SIZE = 8 * 1048756;
+        public const int MAX_MESSAGE_SIZE = 8 * 1024 * 1024;
 
         public short id;
         public int size;
