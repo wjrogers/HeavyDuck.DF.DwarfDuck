@@ -279,6 +279,20 @@ namespace HeavyDuck.DF.DFHack
             return Receive(ListUnitsOut.ParseFrom);
         }
 
+        public DFHackReply<EmptyMessage> SetUnitLabors(SetUnitLaborsIn @in)
+        {
+            var id = GetBinding(
+                MethodInfo.GetCurrentMethod().Name,
+                typeof(SetUnitLaborsIn).FullName,
+                typeof(EmptyMessage).FullName);
+
+            // send the message
+            Send(id, @in);
+            
+            // get the reply
+            return Receive(EmptyMessage.ParseFrom);
+        }
+
         #endregion
 
         # region Private Helper Methods
