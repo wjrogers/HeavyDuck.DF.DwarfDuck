@@ -19,9 +19,8 @@ namespace HeavyDuck.DF.DwarfDuck
 
     internal class DwarfListCell : DataGridViewCell
     {
-        private const int ITEM_WIDTH = 18 + (ITEM_PADDING + PIP_SIZE) * 3 + ITEM_PADDING;
-        private const int ITEM_PADDING = 1;
-        private const int PIP_SIZE = 2;
+        private const int ITEM_BORDER = 1;
+        private const int ITEM_PADDING = 3;
 
         private static readonly ThreadLocal<Dictionary<Color, Brush>> m_brush_cache
             = new ThreadLocal<Dictionary<Color, Brush>>(() => new Dictionary<Color, Brush>());
@@ -56,7 +55,7 @@ namespace HeavyDuck.DF.DwarfDuck
                 return new Size(-1, -1);
 
             // measure how much space we need
-            return new Size(cellStyle.Padding.Horizontal + value.Count * (ITEM_WIDTH + ITEM_PADDING), -1);
+            return new Size(cellStyle.Padding.Horizontal + value.Sum(v => v.SkillInfo.Level + ITEM_PADDING), -1);
         }
 
         protected override void Paint(Graphics graphics, Rectangle clipBounds, Rectangle cellBounds, int rowIndex, DataGridViewElementStates elementState, object value, object formattedValue, string errorText, DataGridViewCellStyle cellStyle, DataGridViewAdvancedBorderStyle advancedBorderStyle, DataGridViewPaintParts paintParts)
@@ -87,35 +86,20 @@ namespace HeavyDuck.DF.DwarfDuck
             if (list == null)
                 return;
 
+            var pen_border = new Pen(Color.FromArgb(128, Color.White), 1);
+
             // draw our list of dwarfs
             foreach (var item in list)
             {
-                if (item.Image == null) continue;
-
                 // center vertically in the cell I guess
-                int y = rect_paint.Top + rect_paint.Height / 2 - item.Image.Height / 2;
+                int height = rect_paint.Height - 3;
+                int width = item.SkillInfo.Level + ITEM_BORDER * 2;
+                int top = rect_paint.Top + 1;
 
-                // draw the image
-                graphics.DrawImageUnscaled(item.Image, x, y);
-                x += item.Image.Width + ITEM_PADDING;
-
-                // draw skill pips, column 1
-                for (int i = 1; i <= item.SkillInfo.Level && i <= 6; ++i)
-                    graphics.FillRectangle(Brushes.Black, x, y + item.Image.Height - i * (PIP_SIZE + ITEM_PADDING) + 1, PIP_SIZE, PIP_SIZE);
-                x += PIP_SIZE + ITEM_PADDING;
-
-                // draw skill pips, column 2
-                for (int i = 7; i <= item.SkillInfo.Level && i <= 12; ++i)
-                    graphics.FillRectangle(Brushes.Black, x, y + item.Image.Height - (i - 6) * (PIP_SIZE + ITEM_PADDING) + 1, PIP_SIZE, PIP_SIZE);
-                x += PIP_SIZE + ITEM_PADDING;
-
-                // draw skill pips, column 3
-                for (int i = 13; i <= item.SkillInfo.Level && i <= 18; ++i)
-                    graphics.FillRectangle(Brushes.Black, x, y + item.Image.Height - (i - 12) * (PIP_SIZE + ITEM_PADDING) + 1, PIP_SIZE, PIP_SIZE);
-                x += PIP_SIZE + ITEM_PADDING;
-
-                // one more pixel of spacing
-                x += ITEM_PADDING;
+                // draw the bar
+                graphics.FillRectangle(Brushes.Navy, x, top, width, height);
+                graphics.DrawRectangle(pen_border, x, top, width - 1, height);
+                x += width + ITEM_PADDING;
             }
         }
 
@@ -125,7 +109,8 @@ namespace HeavyDuck.DF.DwarfDuck
             if (list == null) return null;
             var style = this.InheritedStyle;
 
-            int index = (e.X - style.Padding.Left) / (ITEM_WIDTH + ITEM_PADDING);
+            // TODO: FIX
+            int index = (e.X - style.Padding.Left) / (3 + ITEM_PADDING);
             if (index < 0 || list.Count <= index)
                 return null;
             else

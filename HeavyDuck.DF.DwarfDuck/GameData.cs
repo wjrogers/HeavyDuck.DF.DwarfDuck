@@ -11,7 +11,8 @@ namespace HeavyDuck.DF.DwarfDuck
     internal static class GameData
     {
         public const int NONE = -1;
-        public const float SKILL_MAX = 18f;
+        public const int SKILL_LEGENDARY = 15;
+        public const int SKILL_MAX = 20;
         public const string CATEGORY_HAULING = "Hauling";
         public const string CATEGORY_OTHER = "Other";
 

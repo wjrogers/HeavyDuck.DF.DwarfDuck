@@ -145,7 +145,7 @@ namespace HeavyDuck.DF.DFHack
                     case (short)DFHackReplyCode.RPC_REPLY_TEXT:
                         ReadBytes(stream, m_buffer_proto, header.size);
 
-                        // parse a text notification  message from the stream
+                        // parse a text notification message from the stream
                         chunk = ByteString.CopyFrom(m_buffer_proto, 0, header.size);
                         notification = CoreTextNotification.ParseFrom(chunk);
                         text.Add(notification);
@@ -154,7 +154,7 @@ namespace HeavyDuck.DF.DFHack
                     case (short)DFHackReplyCode.RPC_REPLY_RESULT:
                         ReadBytes(stream, m_buffer_proto, header.size);
 
-                        // parse a text notification  message from the stream
+                        // use the provided parser to read the data message
                         chunk = ByteString.CopyFrom(m_buffer_proto, 0, header.size);
                         data = parser(chunk);
                         return new DFHackReply<T>(data, DFHackCommandResult.CR_OK, text);
